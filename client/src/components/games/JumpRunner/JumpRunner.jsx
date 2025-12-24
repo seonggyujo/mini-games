@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import './JumpRunner.css';
 
-const GAME_WIDTH = 800;
-const GAME_HEIGHT = 300;
-const GROUND_HEIGHT = 20;
-const PLAYER_WIDTH = 40;
-const PLAYER_HEIGHT = 40;
-const OBSTACLE_WIDTH = 35;
-const OBSTACLE_HEIGHT = 45;
-const GRAVITY = 0.8;
-const JUMP_FORCE = -15;
-const INITIAL_SPEED = 5;
-const SPEED_INCREMENT = 0.001;
+const GAME_WIDTH = 1200;
+const GAME_HEIGHT = 450;
+const GROUND_HEIGHT = 30;
+const PLAYER_WIDTH = 50;
+const PLAYER_HEIGHT = 50;
+const OBSTACLE_WIDTH = 45;
+const OBSTACLE_HEIGHT = 55;
+const GRAVITY = 0.6;
+const JUMP_FORCE = 14;
+const INITIAL_SPEED = 6;
+const SPEED_INCREMENT = 0.002;
 
 function JumpRunner() {
   const [gameState, setGameState] = useState('ready'); // ready, playing, gameover
@@ -84,10 +84,14 @@ function JumpRunner() {
 
     const gameLoop = () => {
       // Update player position (gravity and jump)
-      playerVelocityRef.current += GRAVITY;
       setPlayerY(prev => {
-        let newY = prev + playerVelocityRef.current;
-        if (newY >= 0) {
+        let newVelocity = playerVelocityRef.current - GRAVITY;
+        playerVelocityRef.current = newVelocity;
+        
+        let newY = prev + newVelocity;
+        
+        // 땅에 닿으면 멈춤
+        if (newY <= 0) {
           newY = 0;
           playerVelocityRef.current = 0;
           isJumpingRef.current = false;
@@ -135,20 +139,20 @@ function JumpRunner() {
 
     const playerLeft = 50;
     const playerRight = playerLeft + PLAYER_WIDTH - 10;
-    const playerTop = GAME_HEIGHT - GROUND_HEIGHT - PLAYER_HEIGHT - playerY;
-    const playerBottom = GAME_HEIGHT - GROUND_HEIGHT;
+    const playerBottom = GROUND_HEIGHT + playerY;
+    const playerTop = playerBottom + PLAYER_HEIGHT;
 
     for (const obs of obstacles) {
       const obsLeft = obs.x + 5;
       const obsRight = obs.x + OBSTACLE_WIDTH - 5;
-      const obsTop = GAME_HEIGHT - GROUND_HEIGHT - obs.height;
-      const obsBottom = GAME_HEIGHT - GROUND_HEIGHT;
+      const obsBottom = GROUND_HEIGHT;
+      const obsTop = GROUND_HEIGHT + obs.height;
 
       if (
         playerRight > obsLeft &&
         playerLeft < obsRight &&
-        playerBottom > obsTop &&
-        playerTop < obsBottom
+        playerBottom < obsTop &&
+        playerTop > obsBottom
       ) {
         // Collision detected
         setGameState('gameover');
@@ -184,8 +188,8 @@ function JumpRunner() {
     setNickname('');
   };
 
-  const groundY = GAME_HEIGHT - GROUND_HEIGHT;
-  const playerBottom = groundY - PLAYER_HEIGHT - playerY;
+  // Calculate speed level (every 2 speed increase = 1 level)
+  const speedLevel = Math.floor((speed - INITIAL_SPEED) / 2) + 1;
 
   return (
     <div className="jump-runner-container">
@@ -193,6 +197,11 @@ function JumpRunner() {
         <div className="current-score">
           <span>SCORE</span>
           <span className="score-value">{Math.floor(score / 10)}</span>
+        </div>
+        <div className="speed-display">
+          <span>LEVEL</span>
+          <span className="level-value">{speedLevel}</span>
+          <span className="speed-value">SPD: {speed.toFixed(1)}</span>
         </div>
         <div className="high-score">
           <span>BEST</span>
@@ -217,7 +226,7 @@ function JumpRunner() {
           className={`player ${isJumpingRef.current ? 'jumping' : ''}`}
           style={{
             left: 50,
-            bottom: groundY - playerBottom - PLAYER_HEIGHT,
+            bottom: GROUND_HEIGHT + playerY,
             width: PLAYER_WIDTH,
             height: PLAYER_HEIGHT
           }}
