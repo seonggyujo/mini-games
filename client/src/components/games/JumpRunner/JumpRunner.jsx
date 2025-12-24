@@ -29,6 +29,9 @@ function JumpRunner() {
   const isJumpingRef = useRef(false);
   const gameLoopRef = useRef(null);
   const obstacleTimerRef = useRef(0);
+  const lastTimeRef = useRef(0);
+  const speedRef = useRef(INITIAL_SPEED);
+  const scoreRef = useRef(0);
 
   // Jump handler
   const jump = useCallback(() => {
@@ -67,6 +70,9 @@ function JumpRunner() {
     playerVelocityRef.current = 0;
     isJumpingRef.current = false;
     obstacleTimerRef.current = 0;
+    lastTimeRef.current = 0;
+    speedRef.current = INITIAL_SPEED;
+    scoreRef.current = 0;
   };
 
   // Reset game
@@ -76,19 +82,29 @@ function JumpRunner() {
     setPlayerY(0);
     setObstacles([]);
     setSpeed(INITIAL_SPEED);
+    lastTimeRef.current = 0;
+    speedRef.current = INITIAL_SPEED;
+    scoreRef.current = 0;
   };
 
   // Game loop
   useEffect(() => {
     if (gameState !== 'playing') return;
 
-    const gameLoop = () => {
+    const gameLoop = (currentTime) => {
+      // Delta time 계산 (60fps 기준 정규화)
+      if (lastTimeRef.current === 0) {
+        lastTimeRef.current = currentTime;
+      }
+      const deltaTime = Math.min((currentTime - lastTimeRef.current) / 16.67, 3); // 최대 3프레임으로 제한
+      lastTimeRef.current = currentTime;
+
       // Update player position (gravity and jump)
       setPlayerY(prev => {
-        let newVelocity = playerVelocityRef.current - GRAVITY;
+        let newVelocity = playerVelocityRef.current - (GRAVITY * deltaTime);
         playerVelocityRef.current = newVelocity;
         
-        let newY = prev + newVelocity;
+        let newY = prev + (newVelocity * deltaTime);
         
         // 땅에 닿으면 멈춤
         if (newY <= 0) {
@@ -102,15 +118,15 @@ function JumpRunner() {
       // Update obstacles
       setObstacles(prev => {
         const updated = prev
-          .map(obs => ({ ...obs, x: obs.x - speed }))
+          .map(obs => ({ ...obs, x: obs.x - (speedRef.current * deltaTime) }))
           .filter(obs => obs.x > -OBSTACLE_WIDTH);
         return updated;
       });
 
       // Spawn new obstacles
-      obstacleTimerRef.current++;
-      if (obstacleTimerRef.current > 100 - Math.min(speed * 5, 50)) {
-        if (Math.random() < 0.02 + speed * 0.005) {
+      obstacleTimerRef.current += deltaTime;
+      if (obstacleTimerRef.current > 100 - Math.min(speedRef.current * 5, 50)) {
+        if (Math.random() < 0.02 + speedRef.current * 0.005) {
           setObstacles(prev => [...prev, { 
             x: GAME_WIDTH, 
             id: Date.now(),
@@ -121,17 +137,19 @@ function JumpRunner() {
       }
 
       // Increase speed over time
-      setSpeed(prev => prev + SPEED_INCREMENT);
+      speedRef.current += SPEED_INCREMENT * deltaTime;
+      setSpeed(speedRef.current);
 
       // Update score
-      setScore(prev => prev + 1);
+      scoreRef.current += deltaTime;
+      setScore(Math.floor(scoreRef.current));
 
       gameLoopRef.current = requestAnimationFrame(gameLoop);
     };
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(gameLoopRef.current);
-  }, [gameState, speed]);
+  }, [gameState]);
 
   // Collision detection
   useEffect(() => {

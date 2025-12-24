@@ -3,11 +3,17 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"mini-games/model"
 	"mini-games/service"
 )
+
+const MAX_SCORE = 100000 // 점수 상한
+
+var validNicknameRegex = regexp.MustCompile(`^[a-zA-Z0-9가-힣_\-\s]+$`)
 
 func HandleScores(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -25,16 +31,25 @@ func createScore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate input
+	// Validate and sanitize nickname
+	input.Nickname = strings.TrimSpace(input.Nickname)
 	if input.Nickname == "" || len(input.Nickname) > 20 {
 		http.Error(w, "Invalid nickname", http.StatusBadRequest)
 		return
 	}
+	if !validNicknameRegex.MatchString(input.Nickname) {
+		http.Error(w, "Nickname contains invalid characters", http.StatusBadRequest)
+		return
+	}
+
+	// Validate game
 	if input.Game == "" {
 		http.Error(w, "Invalid game", http.StatusBadRequest)
 		return
 	}
-	if input.Score < 0 {
+
+	// Validate score (prevent manipulation)
+	if input.Score < 0 || input.Score > MAX_SCORE {
 		http.Error(w, "Invalid score", http.StatusBadRequest)
 		return
 	}
