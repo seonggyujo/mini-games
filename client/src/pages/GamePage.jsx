@@ -1,9 +1,11 @@
 import { useParams } from 'react-router-dom';
 import JumpRunner from '../components/games/JumpRunner/JumpRunner';
+import SpeedClick from '../components/games/SpeedClick/SpeedClick';
 import './GamePage.css';
 
 const gameComponents = {
-  'jump-runner': JumpRunner
+  'jump-runner': JumpRunner,
+  'speed-click': SpeedClick
 };
 
 function GamePage() {

@@ -2,14 +2,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import './JumpRunner.css';
 
 const GAME_WIDTH = 1200;
-const GAME_HEIGHT = 450;
-const GROUND_HEIGHT = 30;
-const PLAYER_WIDTH = 50;
-const PLAYER_HEIGHT = 50;
-const OBSTACLE_WIDTH = 45;
-const OBSTACLE_HEIGHT = 55;
-const GRAVITY = 0.6;
-const JUMP_FORCE = 14;
+const GAME_HEIGHT = 600;
+const GROUND_HEIGHT = 40;
+const PLAYER_WIDTH = 70;
+const PLAYER_HEIGHT = 70;
+const OBSTACLE_WIDTH = 60;
+const OBSTACLE_HEIGHT = 75;
+const GRAVITY = 0.8;
+const JUMP_FORCE = 18;
 const INITIAL_SPEED = 6;
 const SPEED_INCREMENT = 0.002;
 

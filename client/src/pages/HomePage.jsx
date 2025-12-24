@@ -10,11 +10,11 @@ const games = [
     available: true
   },
   {
-    id: '2048',
-    title: '2048',
-    description: '숫자를 합쳐 2048을 만들어라!',
-    icon: '🔢',
-    available: false
+    id: 'speed-click',
+    title: 'Speed Click',
+    description: '빨간 공만 빠르게 클릭!',
+    icon: '🔴',
+    available: true
   },
   {
     id: 'snake',

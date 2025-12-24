@@ -1,0 +1,325 @@
+.speed-click-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.score-board {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.lives-display,
+.current-score,
+.level-display,
+.high-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.lives-display span:first-child,
+.current-score span:first-child,
+.level-display span:first-child,
+.high-score span:first-child {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.lives-value {
+  display: flex;
+  gap: 0.25rem;
+  font-size: 1.2rem;
+}
+
+.heart {
+  transition: transform 0.2s;
+}
+
+.heart.active {
+  animation: heartbeat 0.3s;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.score-value,
+.level-value,
+.best-value {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.level-value {
+  color: #00cec9;
+}
+
+.best-value {
+  color: var(--accent-color);
+}
+
+.game-area {
+  position: relative;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: crosshair;
+  border: 3px solid var(--primary-color);
+}
+
+/* 타이머 바 */
+.timer-bar-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #00b894, #55efc4);
+  transition: width 0.016s linear;
+}
+
+.timer-bar.danger {
+  background: linear-gradient(90deg, #d63031, #ff7675);
+}
+
+/* 공 */
+.ball {
+  position: absolute;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.ball:hover {
+  transform: scale(1.05);
+}
+
+.ball.red {
+  background: radial-gradient(circle at 30% 30%, #ff7675, #d63031, #c0392b);
+  box-shadow: 0 0 20px rgba(214, 48, 49, 0.5);
+  animation: pulse-red 0.3s infinite alternate;
+}
+
+.ball.blue {
+  background: radial-gradient(circle at 30% 30%, #74b9ff, #0984e3, #0652DD);
+  box-shadow: 0 0 20px rgba(9, 132, 227, 0.5);
+  animation: pulse-blue 0.5s infinite alternate;
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 15px rgba(214, 48, 49, 0.5); }
+  100% { box-shadow: 0 0 25px rgba(214, 48, 49, 0.8); }
+}
+
+@keyframes pulse-blue {
+  0% { box-shadow: 0 0 15px rgba(9, 132, 227, 0.5); }
+  100% { box-shadow: 0 0 20px rgba(9, 132, 227, 0.7); }
+}
+
+/* 클릭 효과 */
+.click-effect {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1rem;
+  pointer-events: none;
+  animation: floatUp 0.3s forwards;
+  z-index: 100;
+}
+
+.click-effect.success {
+  color: #00b894;
+  text-shadow: 0 0 10px rgba(0, 184, 148, 0.8);
+}
+
+.click-effect.wrong {
+  color: #d63031;
+  text-shadow: 0 0 10px rgba(214, 48, 49, 0.8);
+}
+
+.click-effect.miss {
+  color: #fdcb6e;
+  text-shadow: 0 0 10px rgba(253, 203, 110, 0.8);
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(1.5);
+  }
+}
+
+/* 게임 오버레이 */
+.game-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.8);
+  gap: 1rem;
+}
+
+.game-overlay h2 {
+  font-size: 2rem;
+  color: var(--primary-color);
+}
+
+.game-overlay.gameover h2 {
+  color: var(--accent-color);
+}
+
+.game-overlay .rules {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.game-overlay .rules p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+}
+
+.ball-icon {
+  font-size: 1.5rem;
+}
+
+.ball-icon.red {
+  color: #d63031;
+  text-shadow: 0 0 10px rgba(214, 48, 49, 0.5);
+}
+
+.ball-icon.blue {
+  color: #0984e3;
+  text-shadow: 0 0 10px rgba(9, 132, 227, 0.5);
+}
+
+.game-overlay p {
+  color: var(--text-color);
+  font-size: 1.2rem;
+}
+
+.game-overlay .hint {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+
+.game-overlay .final-score {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.game-overlay .final-level {
+  font-size: 1rem;
+  color: #00cec9;
+}
+
+.game-instructions {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* 모달 (JumpRunner에서 재사용) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--card-bg);
+  padding: 2rem;
+  border-radius: 16px;
+  text-align: center;
+  border: 2px solid var(--primary-color);
+  min-width: 300px;
+}
+
+.modal h3 {
+  color: var(--accent-color);
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.modal p {
+  margin-bottom: 1rem;
+}
+
+.modal input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modal input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.submit-btn,
+.cancel-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: transform 0.2s;
+}
+
+.submit-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.cancel-btn {
+  background: transparent;
+  border: 2px solid var(--text-muted);
+  color: var(--text-muted);
+}
+
+.submit-btn:hover,
+.cancel-btn:hover {
+  transform: scale(1.05);
+}

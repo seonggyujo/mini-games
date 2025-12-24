@@ -7,7 +7,8 @@ function RankingPage() {
   const [loading, setLoading] = useState(true);
 
   const games = [
-    { id: 'jump-runner', name: 'Jump Runner' }
+    { id: 'jump-runner', name: 'Jump Runner' },
+    { id: 'speed-click', name: 'Speed Click' }
   ];
 
   useEffect(() => {
