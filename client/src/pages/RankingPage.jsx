@@ -2,28 +2,32 @@ import { useState, useEffect } from 'react';
 import './RankingPage.css';
 
 function RankingPage() {
-  const [rankings, setRankings] = useState([]);
-  const [selectedGame, setSelectedGame] = useState('jump-runner');
+  const [allRankings, setAllRankings] = useState({});
   const [loading, setLoading] = useState(true);
 
   const games = [
-    { id: 'jump-runner', name: 'Jump Runner' },
-    { id: 'speed-click', name: 'Speed Click' }
+    { id: 'jump-runner', name: 'Jump Runner', icon: '🐭' },
+    { id: 'speed-click', name: 'Speed Click', icon: '🔴' }
   ];
 
   useEffect(() => {
-    fetchRankings();
-  }, [selectedGame]);
+    fetchAllRankings();
+  }, []);
 
-  const fetchRankings = async () => {
+  const fetchAllRankings = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/ranking?game=${selectedGame}&limit=10`);
-      const data = await response.json();
-      setRankings(data);
+      const results = {};
+      await Promise.all(
+        games.map(async (game) => {
+          const response = await fetch(`/api/ranking?game=${game.id}&limit=10`);
+          const data = await response.json();
+          results[game.id] = data;
+        })
+      );
+      setAllRankings(results);
     } catch (error) {
       console.error('Failed to fetch rankings:', error);
-      setRankings([]);
     }
     setLoading(false);
   };
@@ -45,54 +49,51 @@ function RankingPage() {
         <p>전세계 플레이어들과 경쟁하세요!</p>
       </header>
 
-      <div className="game-filter">
-        {games.map(game => (
-          <button
-            key={game.id}
-            className={`filter-btn ${selectedGame === game.id ? 'active' : ''}`}
-            onClick={() => setSelectedGame(game.id)}
-          >
-            {game.name}
-          </button>
-        ))}
-      </div>
-
-      <div className="ranking-table-container">
-        {loading ? (
-          <div className="loading">Loading...</div>
-        ) : rankings.length === 0 ? (
-          <div className="no-data">
-            <p>아직 기록이 없습니다.</p>
-            <p>첫 번째 기록을 세워보세요!</p>
-          </div>
-        ) : (
-          <table className="ranking-table">
-            <thead>
-              <tr>
-                <th>순위</th>
-                <th>닉네임</th>
-                <th>점수</th>
-                <th>날짜</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rankings.map((record, index) => (
-                <tr key={record.id} className={index < 3 ? `top-${index + 1}` : ''}>
-                  <td className="rank">
-                    {index === 0 && <span className="medal gold">🥇</span>}
-                    {index === 1 && <span className="medal silver">🥈</span>}
-                    {index === 2 && <span className="medal bronze">🥉</span>}
-                    {index > 2 && <span>{index + 1}</span>}
-                  </td>
-                  <td className="nickname">{record.nickname}</td>
-                  <td className="score">{record.score}</td>
-                  <td className="date">{formatDate(record.created_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {loading ? (
+        <div className="loading">Loading...</div>
+      ) : (
+        <div className="rankings-grid">
+          {games.map(game => (
+            <div key={game.id} className="ranking-card">
+              <div className="ranking-card-header">
+                <span className="game-icon">{game.icon}</span>
+                <h2>{game.name}</h2>
+              </div>
+              <div className="ranking-card-body">
+                {!allRankings[game.id] || allRankings[game.id].length === 0 ? (
+                  <div className="no-data">
+                    <p>아직 기록이 없습니다.</p>
+                  </div>
+                ) : (
+                  <table className="ranking-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>닉네임</th>
+                        <th>점수</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allRankings[game.id].map((record, index) => (
+                        <tr key={record.id} className={index < 3 ? `top-${index + 1}` : ''}>
+                          <td className="rank">
+                            {index === 0 && <span className="medal">🥇</span>}
+                            {index === 1 && <span className="medal">🥈</span>}
+                            {index === 2 && <span className="medal">🥉</span>}
+                            {index > 2 && <span>{index + 1}</span>}
+                          </td>
+                          <td className="nickname">{record.nickname}</td>
+                          <td className="score">{record.score}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 .ranking-page {
   padding: 2rem;
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -19,49 +19,65 @@
   color: var(--text-muted);
 }
 
-.game-filter {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.filter-btn {
-  padding: 0.75rem 1.5rem;
-  background: var(--card-bg);
-  color: var(--text-muted);
-  border-radius: 25px;
-  transition: all 0.3s;
-}
-
-.filter-btn:hover {
-  color: var(--text-color);
-}
-
-.filter-btn.active {
-  background: var(--primary-color);
-  color: white;
-}
-
-.ranking-table-container {
-  background: var(--card-bg);
-  border-radius: 16px;
-  padding: 1.5rem;
-  border: 2px solid var(--primary-color);
-}
-
-.loading,
-.no-data {
+.loading {
   text-align: center;
   padding: 3rem;
   color: var(--text-muted);
 }
 
-.no-data p:first-child {
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
+/* 2열 그리드 */
+.rankings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
 }
 
+@media (max-width: 768px) {
+  .rankings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 랭킹 카드 */
+.ranking-card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  border: 2px solid var(--primary-color);
+  overflow: hidden;
+}
+
+.ranking-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(108, 92, 231, 0.2);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.ranking-card-header .game-icon {
+  font-size: 1.5rem;
+}
+
+.ranking-card-header h2 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.9rem;
+  color: var(--primary-color);
+  margin: 0;
+}
+
+.ranking-card-body {
+  padding: 1rem;
+}
+
+.no-data {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+/* 테이블 */
 .ranking-table {
   width: 100%;
   border-collapse: collapse;
@@ -69,13 +85,13 @@
 
 .ranking-table th,
 .ranking-table td {
-  padding: 1rem;
+  padding: 0.75rem 0.5rem;
   text-align: center;
 }
 
 .ranking-table th {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -91,37 +107,34 @@
 .ranking-table .rank {
   font-weight: bold;
   color: var(--text-muted);
+  width: 50px;
 }
 
 .ranking-table .medal {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
 }
 
 .ranking-table .nickname {
   font-weight: bold;
   color: var(--text-color);
+  text-align: left;
 }
 
 .ranking-table .score {
   font-family: 'Press Start 2P', cursive;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: var(--accent-color);
-}
-
-.ranking-table .date {
-  font-size: 0.85rem;
-  color: var(--text-muted);
 }
 
 /* Top 3 styling */
 .ranking-table tr.top-1 {
-  background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, transparent 100%);
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.15) 0%, transparent 100%);
 }
 
 .ranking-table tr.top-2 {
-  background: linear-gradient(90deg, rgba(192, 192, 192, 0.1) 0%, transparent 100%);
+  background: linear-gradient(90deg, rgba(192, 192, 192, 0.15) 0%, transparent 100%);
 }
 
 .ranking-table tr.top-3 {
-  background: linear-gradient(90deg, rgba(205, 127, 50, 0.1) 0%, transparent 100%);
+  background: linear-gradient(90deg, rgba(205, 127, 50, 0.15) 0%, transparent 100%);
 }
