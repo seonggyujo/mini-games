@@ -1,0 +1,161 @@
+================================================================================
+                    Mini Games 오라클 클라우드 배포 가이드
+================================================================================
+
+서버 정보:
+- 도메인: mini-games.duckdns.org
+- 포트: 4001 (Go 백엔드)
+- OS: Ubuntu 22.04
+- 프로세스 관리: systemd
+
+================================================================================
+Step 1: 프로젝트 클론 및 빌드
+================================================================================
+
+cd ~
+git clone https://github.com/seonggyujo/mini-games.git
+cd mini-games/client
+npm install
+npm run build
+cd ../server
+go build -o mini-games-server
+
+================================================================================
+Step 2: systemd 서비스 파일 생성
+================================================================================
+
+sudo nano /etc/systemd/system/mini-games.service
+
+--- 아래 내용 붙여넣기 ---
+
+[Unit]
+Description=Mini Games Server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/mini-games/server
+ExecStart=/home/ubuntu/mini-games/server/mini-games-server
+Restart=always
+RestartSec=5
+Environment=PORT=4001
+
+[Install]
+WantedBy=multi-user.target
+
+--- 여기까지 ---
+
+저장: Ctrl+O, Enter, Ctrl+X
+
+================================================================================
+Step 3: 서비스 시작
+================================================================================
+
+sudo systemctl daemon-reload
+sudo systemctl enable mini-games
+sudo systemctl start mini-games
+sudo systemctl status mini-games
+
+================================================================================
+Step 4: Nginx 설정 파일 생성
+================================================================================
+
+sudo nano /etc/nginx/sites-available/mini-games
+
+--- 아래 내용 붙여넣기 ---
+
+server {
+    listen 80;
+    server_name mini-games.duckdns.org;
+
+    # 프론트엔드 정적 파일
+    root /home/ubuntu/mini-games/client/dist;
+    index index.html;
+
+    # API 요청은 Go 서버로 프록시
+    location /api/ {
+        proxy_pass http://localhost:4001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # SPA 라우팅 지원
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+
+--- 여기까지 ---
+
+저장: Ctrl+O, Enter, Ctrl+X
+
+================================================================================
+Step 5: Nginx 활성화 및 재시작
+================================================================================
+
+sudo ln -s /etc/nginx/sites-available/mini-games /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+
+================================================================================
+Step 6: SSL 인증서 발급
+================================================================================
+
+sudo certbot --nginx -d mini-games.duckdns.org
+
+================================================================================
+Step 7: 확인
+================================================================================
+
+curl -I https://mini-games.duckdns.org
+
+브라우저에서 https://mini-games.duckdns.org 접속
+
+================================================================================
+                              유용한 명령어
+================================================================================
+
+# 서비스 상태 확인
+sudo systemctl status mini-games
+
+# 서비스 재시작
+sudo systemctl restart mini-games
+
+# 서비스 로그 확인
+sudo journalctl -u mini-games -f
+
+# Nginx 설정 테스트
+sudo nginx -t
+
+# Nginx 재시작
+sudo systemctl reload nginx
+
+# 코드 업데이트 시
+cd ~/mini-games
+git pull
+cd client && npm run build
+cd ../server && go build -o mini-games-server
+sudo systemctl restart mini-games
+
+================================================================================
+                              문제 해결
+================================================================================
+
+1. 서비스가 시작되지 않을 때:
+   sudo journalctl -u mini-games -n 50
+
+2. Nginx 오류 시:
+   sudo nginx -t
+   sudo tail -f /var/log/nginx/error.log
+
+3. 포트 확인:
+   sudo ss -tlnp | grep 4001
+
+4. 방화벽 확인 (오라클 클라우드 보안 목록):
+   - 80, 443 포트가 열려있는지 확인 (Nginx가 처리하므로 4001은 불필요)
+
+================================================================================
