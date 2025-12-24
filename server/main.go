@@ -27,8 +27,8 @@ func main() {
 	handler := middleware.CORS(middleware.RateLimit(mux))
 
 	// Start server
-	log.Println("Server starting on :8080")
-	if err := http.ListenAndServe(":8080", handler); err != nil {
+	log.Println("Server starting on :4001")
+	if err := http.ListenAndServe(":4001", handler); err != nil {
 		log.Fatal("Server failed:", err)
 	}
 }
