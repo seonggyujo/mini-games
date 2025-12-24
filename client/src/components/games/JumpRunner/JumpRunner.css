@@ -1,0 +1,360 @@
+.jump-runner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.score-board {
+  display: flex;
+  gap: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.current-score,
+.high-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.current-score span:first-child,
+.high-score span:first-child {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.score-value {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.high-score .score-value {
+  color: var(--accent-color);
+}
+
+.game-canvas {
+  position: relative;
+  background: linear-gradient(to bottom, #2d3436 0%, #636e72 100%);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 3px solid var(--primary-color);
+}
+
+.ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to bottom, #6d4c41 0%, #4e342e 100%);
+}
+
+/* Mouse (Player) */
+.player {
+  position: absolute;
+  z-index: 10;
+  transition: transform 0.1s;
+}
+
+.player.jumping {
+  transform: rotate(-10deg);
+}
+
+.mouse-body {
+  position: relative;
+  width: 100%;
+  height: 80%;
+  background: #9e9e9e;
+  border-radius: 50% 50% 45% 45%;
+  box-shadow: inset -5px -5px 10px rgba(0,0,0,0.2);
+}
+
+.mouse-ear {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #bdbdbd;
+  border-radius: 50%;
+  top: -5px;
+  border: 2px solid #9e9e9e;
+}
+
+.mouse-ear.left {
+  left: 3px;
+}
+
+.mouse-ear.right {
+  right: 3px;
+}
+
+.mouse-ear::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #ffcdd2;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.mouse-eye {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #212121;
+  border-radius: 50%;
+  top: 35%;
+  right: 8px;
+}
+
+.mouse-nose {
+  position: absolute;
+  width: 6px;
+  height: 4px;
+  background: #ff8a80;
+  border-radius: 50%;
+  top: 50%;
+  right: 2px;
+}
+
+.mouse-tail {
+  position: absolute;
+  bottom: 15px;
+  left: -15px;
+  width: 20px;
+  height: 4px;
+  background: #bdbdbd;
+  border-radius: 2px;
+  transform: rotate(-20deg);
+}
+
+/* Cat (Obstacle) */
+.obstacle {
+  position: absolute;
+  z-index: 5;
+}
+
+.cat-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, #ff9800, #f57c00);
+  border-radius: 30% 30% 20% 20%;
+}
+
+.cat-ear {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 14px solid #ff9800;
+  top: -10px;
+}
+
+.cat-ear.left {
+  left: 2px;
+  transform: rotate(-15deg);
+}
+
+.cat-ear.right {
+  right: 2px;
+  transform: rotate(15deg);
+}
+
+.cat-ear::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 8px solid #ffccbc;
+  top: 4px;
+  left: -4px;
+}
+
+.cat-eyes {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.cat-eye {
+  width: 6px;
+  height: 10px;
+  background: #4caf50;
+  border-radius: 50%;
+  position: relative;
+}
+
+.cat-eye::after {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 8px;
+  background: #212121;
+  border-radius: 50%;
+  top: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.cat-whiskers {
+  position: absolute;
+  top: 45%;
+  right: -5px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.whisker {
+  width: 12px;
+  height: 1px;
+  background: #424242;
+}
+
+.whisker:nth-child(1) {
+  transform: rotate(-15deg);
+}
+
+.whisker:nth-child(3) {
+  transform: rotate(15deg);
+}
+
+/* Overlays */
+.game-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.7);
+  gap: 1rem;
+}
+
+.game-overlay h2 {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.game-overlay.gameover h2 {
+  color: var(--accent-color);
+}
+
+.game-overlay p {
+  color: var(--text-color);
+}
+
+.game-overlay .hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+
+.game-instructions {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--card-bg);
+  padding: 2rem;
+  border-radius: 16px;
+  text-align: center;
+  border: 2px solid var(--primary-color);
+  min-width: 300px;
+}
+
+.modal h3 {
+  color: var(--accent-color);
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.modal p {
+  margin-bottom: 1rem;
+}
+
+.modal input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modal input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.submit-btn,
+.cancel-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: transform 0.2s;
+}
+
+.submit-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.cancel-btn {
+  background: transparent;
+  border: 2px solid var(--text-muted);
+  color: var(--text-muted);
+}
+
+.submit-btn:hover,
+.cancel-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Running animation */
+@keyframes run {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.player:not(.jumping) {
+  animation: run 0.2s infinite;
+}

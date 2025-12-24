@@ -1,0 +1,21 @@
+.game-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 70px);
+  padding: 2rem;
+}
+
+.game-not-found {
+  text-align: center;
+}
+
+.game-not-found h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: var(--accent-color);
+}
+
+.game-not-found p {
+  color: var(--text-muted);
+}
