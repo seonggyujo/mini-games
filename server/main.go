@@ -50,7 +50,7 @@ func main() {
 	// Main router - WebSocket without middleware, API with middleware
 	mainMux := http.NewServeMux()
 	mainMux.HandleFunc("/ws/battle", handler.HandleBattleWS)
-	mainMux.Handle("/", apiHandler)
+	mainMux.Handle("/api/", apiHandler)
 
 	// Start server
 	log.Printf("Server starting on :%s", port)
