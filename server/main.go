@@ -30,7 +30,7 @@ func main() {
 	// Initialize WebSocket handler
 	handler.InitWebSocket()
 
-	// Create router
+	// Create router for API routes
 	mux := http.NewServeMux()
 
 	// API routes
@@ -44,15 +44,17 @@ func main() {
 	mux.HandleFunc("/api/game/speedclick/end", handler.HandleSpeedClickEnd)
 	mux.HandleFunc("/api/game/speedclick/submit", handler.HandleSpeedClickSubmit)
 
-	// WebSocket route (no rate limiting for WebSocket)
-	mux.HandleFunc("/ws/battle", handler.HandleBattleWS)
+	// Apply middleware to API routes (order: Logging -> CORS -> RateLimit)
+	apiHandler := middleware.Logging(middleware.CORS(middleware.RateLimit(mux)))
 
-	// Apply middleware (order: Logging -> CORS -> RateLimit)
-	h := middleware.Logging(middleware.CORS(middleware.RateLimit(mux)))
+	// Main router - WebSocket without middleware, API with middleware
+	mainMux := http.NewServeMux()
+	mainMux.HandleFunc("/ws/battle", handler.HandleBattleWS)
+	mainMux.Handle("/", apiHandler)
 
 	// Start server
 	log.Printf("Server starting on :%s", port)
-	if err := http.ListenAndServe(":"+port, h); err != nil {
+	if err := http.ListenAndServe(":"+port, mainMux); err != nil {
 		log.Fatal("Server failed:", err)
 	}
 }
