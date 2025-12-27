@@ -19,16 +19,16 @@ const games = [
   {
     id: 'snake',
     title: 'Snake',
-    description: '클래식 뱀 게임',
+    description: '클래식 뱀 게임! 사과를 먹고 성장하세요',
     icon: '🐍',
-    available: false
+    available: true
   },
   {
-    id: 'memory',
+    id: 'memory-card',
     title: 'Memory Card',
-    description: '카드 짝 맞추기 게임',
+    description: '카드를 뒤집어 같은 그림을 찾으세요!',
     icon: '🃏',
-    available: false
+    available: true
   }
 ];
 

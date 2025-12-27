@@ -1,11 +1,15 @@
 import { useParams } from 'react-router-dom';
 import JumpRunner from '../components/games/JumpRunner/JumpRunner';
 import SpeedClick from '../components/games/SpeedClick/SpeedClick';
+import Snake from '../components/games/Snake/Snake';
+import MemoryCard from '../components/games/MemoryCard/MemoryCard';
 import './GamePage.css';
 
 const gameComponents = {
   'jump-runner': JumpRunner,
-  'speed-click': SpeedClick
+  'speed-click': SpeedClick,
+  'snake': Snake,
+  'memory-card': MemoryCard
 };
 
 function GamePage() {

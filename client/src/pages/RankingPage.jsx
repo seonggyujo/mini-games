@@ -7,7 +7,9 @@ function RankingPage() {
 
   const games = [
     { id: 'jump-runner', name: 'Jump Runner', icon: '🐭' },
-    { id: 'speed-click', name: 'Speed Click', icon: '🔴' }
+    { id: 'speed-click', name: 'Speed Click', icon: '🔴' },
+    { id: 'snake', name: 'Snake', icon: '🐍' },
+    { id: 'memory-card', name: 'Memory Card', icon: '🃏' }
   ];
 
   useEffect(() => {

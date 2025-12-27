@@ -1,0 +1,366 @@
+.snake-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.score-board {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.current-score,
+.level-display,
+.high-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.current-score span:first-child,
+.level-display span:first-child,
+.high-score span:first-child {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.score-value,
+.level-value,
+.best-value {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.best-value {
+  color: var(--accent-color);
+}
+
+.game-area {
+  position: relative;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 3px solid var(--primary-color);
+}
+
+/* 그리드 배경 */
+.grid-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-wrap: wrap;
+  opacity: 0.1;
+}
+
+.grid-cell {
+  box-sizing: border-box;
+  border: 1px solid var(--primary-color);
+}
+
+/* 뱀 */
+.snake-segment {
+  position: absolute;
+  background: linear-gradient(135deg, #00b894, #00cec9);
+  border-radius: 6px;
+  box-shadow: 0 0 10px rgba(0, 184, 148, 0.5);
+}
+
+.snake-segment.head {
+  background: linear-gradient(135deg, #00cec9, #81ecec);
+  box-shadow: 0 0 15px rgba(0, 206, 201, 0.8);
+  z-index: 10;
+}
+
+.snake-segment.head::before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #1a1a2e;
+  border-radius: 50%;
+  top: 8px;
+  left: 8px;
+}
+
+.snake-segment.head::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #1a1a2e;
+  border-radius: 50%;
+  top: 8px;
+  right: 8px;
+}
+
+/* 음식 */
+.food {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 40px;
+  animation: foodPulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes foodPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+
+/* 게임 오버레이 */
+.game-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.85);
+  gap: 1rem;
+  z-index: 100;
+}
+
+.game-overlay h2 {
+  font-size: 2rem;
+  color: var(--primary-color);
+}
+
+.game-overlay.gameover h2 {
+  color: var(--accent-color);
+}
+
+.game-overlay .subtitle {
+  color: var(--text-muted);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.start-btn,
+.restart-btn {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.start-btn:hover,
+.restart-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(108, 92, 231, 0.5);
+}
+
+/* 레벨 선택 버튼 */
+.level-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.level-btn {
+  padding: 1rem 2rem;
+  min-width: 250px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.level-btn:hover {
+  transform: scale(1.05);
+}
+
+.level-btn.easy {
+  background: linear-gradient(135deg, #00b894, #00cec9);
+  box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+}
+
+.level-btn.easy:hover {
+  box-shadow: 0 4px 25px rgba(0, 184, 148, 0.5);
+}
+
+.level-btn.medium {
+  background: linear-gradient(135deg, #fdcb6e, #f39c12);
+  box-shadow: 0 4px 15px rgba(253, 203, 110, 0.3);
+}
+
+.level-btn.medium:hover {
+  box-shadow: 0 4px 25px rgba(253, 203, 110, 0.5);
+}
+
+.level-btn.hard {
+  background: linear-gradient(135deg, #d63031, #e74c3c);
+  box-shadow: 0 4px 15px rgba(214, 48, 49, 0.3);
+}
+
+.level-btn.hard:hover {
+  box-shadow: 0 4px 25px rgba(214, 48, 49, 0.5);
+}
+
+.level-name {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1rem;
+  color: white;
+}
+
+.level-desc {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.final-score {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.snake-length {
+  font-size: 1rem;
+  color: #00cec9;
+}
+
+/* 모바일 컨트롤 */
+.mobile-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.control-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.control-btn {
+  width: 60px;
+  height: 60px;
+  font-size: 1.5rem;
+  background: var(--card-bg);
+  border: 2px solid var(--primary-color);
+  border-radius: 12px;
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: all 0.1s;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.control-btn:active {
+  background: var(--primary-color);
+  color: white;
+  transform: scale(0.95);
+}
+
+@media (min-width: 768px) {
+  .mobile-controls {
+    display: none;
+  }
+}
+
+.game-instructions {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* 모달 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 200;
+}
+
+.modal {
+  background: var(--card-bg);
+  padding: 2rem;
+  border-radius: 16px;
+  text-align: center;
+  border: 2px solid var(--primary-color);
+  min-width: 300px;
+}
+
+.modal h3 {
+  color: var(--accent-color);
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.modal p {
+  margin-bottom: 1rem;
+}
+
+.modal input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+}
+
+.modal input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.submit-btn,
+.cancel-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: transform 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.submit-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.cancel-btn {
+  background: transparent;
+  border: 2px solid var(--text-muted);
+  color: var(--text-muted);
+}
+
+.submit-btn:hover,
+.cancel-btn:hover {
+  transform: scale(1.05);
+}
