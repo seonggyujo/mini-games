@@ -84,3 +84,160 @@
   border-radius: 25px;
   font-size: 0.8rem;
 }
+
+/* ==================== */
+/* 랭킹 미리보기 섹션    */
+/* ==================== */
+
+.ranking-preview {
+  margin-top: 4rem;
+  text-align: center;
+}
+
+.ranking-preview h2 {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  margin-bottom: 2rem;
+}
+
+.ranking-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.ranking-preview-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 2px solid var(--primary-color);
+  overflow: hidden;
+}
+
+.ranking-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(108, 92, 231, 0.2);
+  border-bottom: 1px solid var(--primary-color);
+}
+
+.preview-icon {
+  font-size: 1.25rem;
+}
+
+.preview-title {
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.ranking-preview-list {
+  padding: 0.5rem;
+}
+
+.ranking-preview-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.ranking-preview-item:hover {
+  background: rgba(108, 92, 231, 0.1);
+}
+
+.ranking-preview-item .medal {
+  font-size: 1.1rem;
+  width: 30px;
+}
+
+.ranking-preview-item .nickname {
+  flex: 1;
+  text-align: left;
+  font-weight: bold;
+  color: var(--text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranking-preview-item .score {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.7rem;
+  color: var(--accent-color);
+}
+
+.no-record {
+  color: var(--text-muted);
+  padding: 1rem;
+  font-size: 0.9rem;
+}
+
+.view-all-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 25px;
+  font-weight: bold;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.view-all-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 20px rgba(253, 121, 168, 0.4);
+}
+
+/* ==================== */
+/* 스켈레톤 UI          */
+/* ==================== */
+
+.ranking-preview-card.skeleton {
+  border-color: rgba(108, 92, 231, 0.3);
+}
+
+.skeleton-header {
+  height: 45px;
+  background: linear-gradient(90deg, 
+    rgba(108, 92, 231, 0.1) 25%, 
+    rgba(108, 92, 231, 0.2) 50%, 
+    rgba(108, 92, 231, 0.1) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-item {
+  height: 36px;
+  margin: 0.5rem;
+  border-radius: 8px;
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0.05) 25%, 
+    rgba(255, 255, 255, 0.1) 50%, 
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ==================== */
+/* 반응형               */
+/* ==================== */
+
+@media (max-width: 640px) {
+  .ranking-preview-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .ranking-preview h2 {
+    font-size: 1.2rem;
+  }
+}
