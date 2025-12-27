@@ -172,7 +172,8 @@ function SpeedClick() {
   };
 
   // 대결 모드 시작
-  const handleBattleMode = () => {
+  const handleBattleMode = (e) => {
+    e.stopPropagation();  // 이벤트 버블링 방지
     setGameState('battle');
   };
 
