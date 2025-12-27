@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import NicknameModal from '../../common/NicknameModal';
+import useHighScore from '../../../hooks/useHighScore';
 import './Snake.css';
 
 const GRID_SIZE = 20;
@@ -34,11 +36,8 @@ function Snake() {
   const [direction, setDirection] = useState('RIGHT');
   const [food, setFood] = useState({ x: 15, y: 10 });
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(() => {
-    return parseInt(localStorage.getItem('snake-highscore') || '0');
-  });
+  const [highScore, , checkAndUpdateHighScore] = useHighScore('snake');
   const [showNicknameModal, setShowNicknameModal] = useState(false);
-  const [nickname, setNickname] = useState('');
   const [currentSpeed, setCurrentSpeed] = useState(150);
 
   const gameLoopRef = useRef(null);
@@ -223,34 +222,10 @@ function Snake() {
 
   // 게임 오버 시 최고 점수 체크
   useEffect(() => {
-    if (gameState === 'gameover' && score > highScore) {
-      setHighScore(score);
-      localStorage.setItem('snake-highscore', score.toString());
+    if (gameState === 'gameover' && checkAndUpdateHighScore(score)) {
       setShowNicknameModal(true);
     }
-  }, [gameState, score, highScore]);
-
-  // 점수 제출
-  const submitScore = async () => {
-    if (!nickname.trim()) return;
-    
-    try {
-      await fetch('/api/scores', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nickname: nickname.trim(),
-          game: 'snake',
-          score: score
-        })
-      });
-    } catch (error) {
-      console.error('Failed to submit score:', error);
-    }
-    
-    setShowNicknameModal(false);
-    setNickname('');
-  };
+  }, [gameState, score, checkAndUpdateHighScore]);
 
   return (
     <div className="snake-container">
@@ -275,14 +250,13 @@ function Snake() {
 
       <div 
         className="game-area"
-        style={{ width: GAME_WIDTH, height: GAME_HEIGHT }}
+        style={{ 
+          width: GAME_WIDTH, 
+          height: GAME_HEIGHT,
+          '--cell-size': `${CELL_SIZE}px`
+        }}
       >
-        {/* 그리드 배경 */}
-        <div className="grid-background">
-          {[...Array(GRID_SIZE * GRID_SIZE)].map((_, i) => (
-            <div key={i} className="grid-cell" style={{ width: CELL_SIZE, height: CELL_SIZE }} />
-          ))}
-        </div>
+        {/* 그리드 배경은 CSS로 처리 */}
 
         {/* 뱀 */}
         {gameState === 'playing' && snake.map((segment, index) => (
@@ -412,24 +386,12 @@ function Snake() {
 
       {/* 닉네임 모달 */}
       {showNicknameModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3 className="pixel-font">NEW HIGH SCORE!</h3>
-            <p>점수: {score}</p>
-            <input
-              type="text"
-              placeholder="닉네임 입력"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value.slice(0, 20))}
-              onKeyDown={(e) => e.key === 'Enter' && submitScore()}
-              autoFocus
-            />
-            <div className="modal-buttons">
-              <button onClick={submitScore} className="submit-btn">등록</button>
-              <button onClick={() => setShowNicknameModal(false)} className="cancel-btn">취소</button>
-            </div>
-          </div>
-        </div>
+        <NicknameModal
+          score={score}
+          gameName="snake"
+          onSubmit={() => setShowNicknameModal(false)}
+          onClose={() => setShowNicknameModal(false)}
+        />
       )}
     </div>
   );

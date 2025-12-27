@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import NicknameModal from '../../common/NicknameModal';
+import useHighScore from '../../../hooks/useHighScore';
 import './JumpRunner.css';
 
 const GAME_WIDTH = 1200;
@@ -16,14 +18,11 @@ const SPEED_INCREMENT = 0.002;
 function JumpRunner() {
   const [gameState, setGameState] = useState('ready'); // ready, playing, gameover
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(() => {
-    return parseInt(localStorage.getItem('jumprunner-highscore') || '0');
-  });
+  const [highScore, , checkAndUpdateHighScore] = useHighScore('jumprunner');
   const [playerY, setPlayerY] = useState(0);
   const [obstacles, setObstacles] = useState([]);
   const [speed, setSpeed] = useState(INITIAL_SPEED);
   const [showNicknameModal, setShowNicknameModal] = useState(false);
-  const [nickname, setNickname] = useState('');
   
   const playerVelocityRef = useRef(0);
   const isJumpingRef = useRef(false);
@@ -174,47 +173,26 @@ function JumpRunner() {
       ) {
         // Collision detected
         setGameState('gameover');
-        if (score > highScore) {
-          setHighScore(score);
-          localStorage.setItem('jumprunner-highscore', score.toString());
+        if (checkAndUpdateHighScore(score)) {
           setShowNicknameModal(true);
         }
         break;
       }
     }
-  }, [obstacles, playerY, gameState, score, highScore]);
-
-  // Submit score to server
-  const submitScore = async () => {
-    if (!nickname.trim()) return;
-    
-    try {
-      await fetch('/api/scores', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nickname: nickname.trim(),
-          game: 'jump-runner',
-          score: score
-        })
-      });
-    } catch (error) {
-      console.error('Failed to submit score:', error);
-    }
-    
-    setShowNicknameModal(false);
-    setNickname('');
-  };
+  }, [obstacles, playerY, gameState, score, checkAndUpdateHighScore]);
 
   // Calculate speed level (every 2 speed increase = 1 level)
   const speedLevel = Math.floor((speed - INITIAL_SPEED) / 2) + 1;
+
+  // formatScore for display (score / 10)
+  const formatScore = (s) => Math.floor(s / 10);
 
   return (
     <div className="jump-runner-container">
       <div className="score-board">
         <div className="current-score">
           <span>SCORE</span>
-          <span className="score-value">{Math.floor(score / 10)}</span>
+          <span className="score-value">{formatScore(score)}</span>
         </div>
         <div className="speed-display">
           <span>LEVEL</span>
@@ -223,7 +201,7 @@ function JumpRunner() {
         </div>
         <div className="high-score">
           <span>BEST</span>
-          <span className="score-value">{Math.floor(highScore / 10)}</span>
+          <span className="score-value">{formatScore(highScore)}</span>
         </div>
       </div>
 
@@ -298,7 +276,7 @@ function JumpRunner() {
         {gameState === 'gameover' && (
           <div className="game-overlay gameover">
             <h2 className="pixel-font">GAME OVER</h2>
-            <p>점수: {Math.floor(score / 10)}</p>
+            <p>점수: {formatScore(score)}</p>
             <p className="hint">SPACE 또는 클릭으로 재시작</p>
           </div>
         )}
@@ -310,24 +288,13 @@ function JumpRunner() {
 
       {/* Nickname modal */}
       {showNicknameModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3 className="pixel-font">NEW HIGH SCORE!</h3>
-            <p>점수: {Math.floor(score / 10)}</p>
-            <input
-              type="text"
-              placeholder="닉네임 입력"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value.slice(0, 20))}
-              onKeyDown={(e) => e.key === 'Enter' && submitScore()}
-              autoFocus
-            />
-            <div className="modal-buttons">
-              <button onClick={submitScore} className="submit-btn">등록</button>
-              <button onClick={() => setShowNicknameModal(false)} className="cancel-btn">취소</button>
-            </div>
-          </div>
-        </div>
+        <NicknameModal
+          score={score}
+          gameName="jump-runner"
+          formatScore={formatScore}
+          onSubmit={() => setShowNicknameModal(false)}
+          onClose={() => setShowNicknameModal(false)}
+        />
       )}
     </div>
   );

@@ -11,7 +11,16 @@ import (
 	"mini-games/service"
 )
 
-const MAX_SCORE = 100000 // 점수 상한
+const MAX_SCORE = 100000   // 점수 상한
+const MAX_BODY_SIZE = 1024 // 1KB max request body
+
+// 허용된 게임 목록 (화이트리스트)
+var allowedGames = map[string]bool{
+	"jump-runner":  true,
+	"speed-click":  true,
+	"snake":        true,
+	"memory-card":  true,
+}
 
 var validNicknameRegex = regexp.MustCompile(`^[a-zA-Z0-9가-힣_\-\s]+$`)
 
@@ -25,8 +34,15 @@ func HandleScores(w http.ResponseWriter, r *http.Request) {
 }
 
 func createScore(w http.ResponseWriter, r *http.Request) {
+	// Limit request body size to prevent DoS
+	r.Body = http.MaxBytesReader(w, r.Body, MAX_BODY_SIZE)
+
 	var input model.ScoreInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		if err.Error() == "http: request body too large" {
+			http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -42,8 +58,9 @@ func createScore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate game
-	if input.Game == "" {
+	// Validate game (whitelist check)
+	input.Game = strings.TrimSpace(input.Game)
+	if !allowedGames[input.Game] {
 		http.Error(w, "Invalid game", http.StatusBadRequest)
 		return
 	}
@@ -70,15 +87,17 @@ func HandleRanking(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	game := r.URL.Query().Get("game")
-	if game == "" {
-		http.Error(w, "Game parameter required", http.StatusBadRequest)
+	game := strings.TrimSpace(r.URL.Query().Get("game"))
+	
+	// Validate game (whitelist check)
+	if !allowedGames[game] {
+		http.Error(w, "Invalid game parameter", http.StatusBadRequest)
 		return
 	}
 
 	limit := 10
 	if l := r.URL.Query().Get("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
 			limit = parsed
 		}
 	}

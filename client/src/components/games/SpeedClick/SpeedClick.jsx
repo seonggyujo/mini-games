@@ -1,35 +1,40 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import NicknameModal from '../../common/NicknameModal';
+import useHighScore from '../../../hooks/useHighScore';
+import { useSpeedClickSession, generateBall, LEVELS } from '../../../hooks/useGameSession';
+import BattleLobby from './BattleLobby';
 import './SpeedClick.css';
 
 const GAME_WIDTH = 1200;
 const GAME_HEIGHT = 800;
-
-// 레벨 설정
-const LEVELS = [
-  { level: 1, timeLimit: 1.00, ballSize: 80, blueChance: 0.10, requiredScore: 0 },
-  { level: 2, timeLimit: 0.90, ballSize: 75, blueChance: 0.13, requiredScore: 5 },
-  { level: 3, timeLimit: 0.80, ballSize: 70, blueChance: 0.16, requiredScore: 10 },
-  { level: 4, timeLimit: 0.70, ballSize: 65, blueChance: 0.20, requiredScore: 15 },
-  { level: 5, timeLimit: 0.60, ballSize: 60, blueChance: 0.23, requiredScore: 20 },
-  { level: 6, timeLimit: 0.50, ballSize: 55, blueChance: 0.26, requiredScore: 25 },
-  { level: 7, timeLimit: 0.40, ballSize: 50, blueChance: 0.30, requiredScore: 30 },
-];
+const SPAWN_DELAY = 300;
 
 function SpeedClick() {
-  const [gameState, setGameState] = useState('ready'); // ready, playing, gameover
+  const [gameState, setGameState] = useState('ready'); // ready, playing, gameover, battle
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [currentLevel, setCurrentLevel] = useState(1);
-  const [ball, setBall] = useState(null); // { x, y, isRed, timeLeft, maxTime }
+  const [ball, setBall] = useState(null);
   const [showNicknameModal, setShowNicknameModal] = useState(false);
-  const [nickname, setNickname] = useState('');
-  const [highScore, setHighScore] = useState(() => {
-    return parseInt(localStorage.getItem('speedclick-highscore') || '0');
-  });
-  const [clickEffect, setClickEffect] = useState(null); // { x, y, type }
+  const [highScore, , checkAndUpdateHighScore] = useHighScore('speedclick');
+  const [clickEffect, setClickEffect] = useState(null);
 
   const ballTimerRef = useRef(null);
   const gameAreaRef = useRef(null);
+  const ballIndexRef = useRef(0);
+  const prevBallEndTimeRef = useRef(0);
+  const gameStartTimeRef = useRef(null);
+
+  // 서버 세션 훅
+  const {
+    sessionId,
+    seed,
+    startSession,
+    reportClick,
+    reportMiss,
+    submitScore,
+    resetSession,
+  } = useSpeedClickSession();
 
   // 현재 레벨 설정 가져오기
   const getLevelConfig = useCallback(() => {
@@ -49,24 +54,22 @@ function SpeedClick() {
     }
   }, [score, currentLevel, getLevelConfig]);
 
-  // 새 공 생성
+  // 새 공 생성 (시드 기반)
   const spawnBall = useCallback(() => {
-    const config = getLevelConfig();
-    const isRed = Math.random() > config.blueChance;
-    const padding = config.ballSize;
-    
-    const x = padding + Math.random() * (GAME_WIDTH - padding * 2);
-    const y = padding + Math.random() * (GAME_HEIGHT - padding * 2);
+    if (!seed) return;
 
+    const newBall = generateBall(seed, ballIndexRef.current, score, prevBallEndTimeRef.current);
+    
     setBall({
-      x,
-      y,
-      isRed,
-      timeLeft: config.timeLimit,
-      maxTime: config.timeLimit,
-      size: config.ballSize
+      x: newBall.x,
+      y: newBall.y,
+      isRed: newBall.isRed,
+      timeLeft: newBall.duration / 1000,
+      maxTime: newBall.duration / 1000,
+      size: newBall.size,
+      index: newBall.index,
     });
-  }, [getLevelConfig]);
+  }, [seed, score]);
 
   // 공 타이머 (시간 감소)
   useEffect(() => {
@@ -76,23 +79,33 @@ function SpeedClick() {
       setBall(prev => {
         if (!prev) return null;
         
-        const newTimeLeft = prev.timeLeft - 0.016; // ~60fps
+        const newTimeLeft = prev.timeLeft - 0.016;
         
         if (newTimeLeft <= 0) {
-          // 시간 초과
+          // 시간 초과 - 서버에 miss 보고
           if (prev.isRed) {
-            // 빨간 공을 놓침 - 목숨 감소
-            setLives(l => {
-              const newLives = l - 1;
-              if (newLives <= 0) {
-                setGameState('gameover');
+            // 빨간 공을 놓침
+            reportMiss(prev.index).then(response => {
+              if (response.valid) {
+                setLives(response.lives);
+                if (response.gameOver) {
+                  setGameState('gameover');
+                }
               }
-              return newLives;
-            });
+            }).catch(console.error);
+
             setClickEffect({ x: prev.x, y: prev.y, type: 'miss' });
             setTimeout(() => setClickEffect(null), 300);
+          } else {
+            // 파란 공을 놓침 - 서버에도 알림 (인덱스 동기화)
+            reportMiss(prev.index).catch(console.error);
           }
-          // 파란 공을 놓침 - 안전
+
+          // 다음 공 준비
+          const currentBallEndTime = prevBallEndTimeRef.current + SPAWN_DELAY + prev.maxTime * 1000;
+          prevBallEndTimeRef.current = currentBallEndTime;
+          ballIndexRef.current++;
+
           return null;
         }
         
@@ -101,50 +114,50 @@ function SpeedClick() {
     }, 16);
 
     return () => clearInterval(ballTimerRef.current);
-  }, [gameState, ball]);
+  }, [gameState, ball, reportMiss]);
 
   // 공이 없으면 새로 생성
   useEffect(() => {
     if (gameState !== 'playing') return;
-    if (!ball) {
+    if (!ball && seed) {
       const timeout = setTimeout(spawnBall, 300);
       return () => clearTimeout(timeout);
     }
-  }, [gameState, ball, spawnBall]);
+  }, [gameState, ball, seed, spawnBall]);
 
   // 공 클릭 처리
-  const handleBallClick = (e) => {
+  const handleBallClick = async (e) => {
     e.stopPropagation();
     if (gameState !== 'playing' || !ball) return;
 
-    const config = getLevelConfig();
+    try {
+      // 서버에 클릭 보고
+      const response = await reportClick(ball.index);
 
-    if (ball.isRed) {
-      // 빨간 공 클릭 - 점수 획득
-      const timeRatio = ball.timeLeft / ball.maxTime;
-      let points = config.level;
-      
-      // 시간 보너스
-      if (timeRatio >= 0.75) {
-        points += 2; // 25% 이내 클릭
-      } else if (timeRatio >= 0.50) {
-        points += 1; // 50% 이내 클릭
-      }
-      
-      setScore(s => s + points);
-      setClickEffect({ x: ball.x, y: ball.y, type: 'success', points });
-    } else {
-      // 파란 공 클릭 - 목숨 감소
-      setLives(l => {
-        const newLives = l - 1;
-        if (newLives <= 0) {
+      if (response.valid) {
+        if (ball.isRed) {
+          // 빨간 공: 서버에서 받은 점수 사용
+          setScore(response.score);
+          setClickEffect({ x: ball.x, y: ball.y, type: 'success', points: response.points });
+        } else {
+          // 파란 공: 목숨 감소
+          setLives(response.lives);
+          setClickEffect({ x: ball.x, y: ball.y, type: 'wrong' });
+        }
+
+        if (response.gameOver) {
           setGameState('gameover');
         }
-        return newLives;
-      });
-      setClickEffect({ x: ball.x, y: ball.y, type: 'wrong' });
+      }
+    } catch (err) {
+      console.error('Click report failed:', err);
     }
-    
+
+    // 다음 공 준비
+    const currentBallEndTime = prevBallEndTimeRef.current + SPAWN_DELAY + ball.maxTime * 1000;
+    prevBallEndTimeRef.current = currentBallEndTime;
+    ballIndexRef.current++;
+
     setTimeout(() => setClickEffect(null), 300);
     setBall(null);
   };
@@ -158,57 +171,77 @@ function SpeedClick() {
     }
   };
 
+  // 대결 모드 시작
+  const handleBattleMode = () => {
+    setGameState('battle');
+  };
+
+  // 대결 모드에서 돌아오기
+  const handleBackFromBattle = () => {
+    setGameState('ready');
+  };
+
   // 게임 시작
-  const startGame = () => {
-    setGameState('playing');
-    setScore(0);
-    setLives(3);
-    setCurrentLevel(1);
-    setBall(null);
+  const startGame = async () => {
+    try {
+      // 서버 세션 시작
+      await startSession();
+      
+      setGameState('playing');
+      setScore(0);
+      setLives(3);
+      setCurrentLevel(1);
+      setBall(null);
+      ballIndexRef.current = 0;
+      prevBallEndTimeRef.current = 0;
+      gameStartTimeRef.current = Date.now();
+    } catch (err) {
+      console.error('Failed to start game:', err);
+      alert('게임 시작에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   // 게임 리셋
   const resetGame = () => {
+    resetSession();
     setGameState('ready');
     setScore(0);
     setLives(3);
     setCurrentLevel(1);
     setBall(null);
+    ballIndexRef.current = 0;
+    prevBallEndTimeRef.current = 0;
   };
 
   // 게임 오버 시 최고 점수 체크
   useEffect(() => {
-    if (gameState === 'gameover' && score > highScore) {
-      setHighScore(score);
-      localStorage.setItem('speedclick-highscore', score.toString());
+    if (gameState === 'gameover' && checkAndUpdateHighScore(score)) {
       setShowNicknameModal(true);
     }
-  }, [gameState, score, highScore]);
+  }, [gameState, score, checkAndUpdateHighScore]);
 
-  // 점수 제출
-  const submitScore = async () => {
-    if (!nickname.trim()) return;
-    
+  // 닉네임 제출 핸들러
+  const handleNicknameSubmit = async (nickname) => {
     try {
-      await fetch('/api/scores', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nickname: nickname.trim(),
-          game: 'speed-click',
-          score: score
-        })
-      });
-    } catch (error) {
-      console.error('Failed to submit score:', error);
+      const result = await submitScore(nickname);
+      if (result.success) {
+        setShowNicknameModal(false);
+      } else {
+        throw new Error('Score submission failed');
+      }
+    } catch (err) {
+      console.error('Failed to submit score:', err);
+      throw err;
     }
-    
-    setShowNicknameModal(false);
-    setNickname('');
   };
 
   // 타이머 바 비율
   const timerRatio = ball ? ball.timeLeft / ball.maxTime : 0;
+
+  // 대결 모드 화면
+  if (gameState === 'battle') {
+    return <BattleLobby onBack={handleBackFromBattle} />;
+  }
 
   return (
     <div className="speed-click-container">
@@ -283,11 +316,14 @@ function SpeedClick() {
         {gameState === 'ready' && (
           <div className="game-overlay">
             <h2 className="pixel-font">SPEED CLICK</h2>
+            <button className="battle-mode-btn" onClick={handleBattleMode}>
+              대결 모드
+            </button>
             <div className="rules">
               <p><span className="ball-icon red">●</span> 빨간 공 - 클릭하면 점수!</p>
               <p><span className="ball-icon blue">●</span> 파란 공 - 클릭하면 안돼!</p>
             </div>
-            <p className="hint">클릭으로 시작</p>
+            <p className="hint">클릭으로 솔로 모드 시작</p>
           </div>
         )}
 
@@ -308,24 +344,13 @@ function SpeedClick() {
 
       {/* 닉네임 모달 */}
       {showNicknameModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3 className="pixel-font">NEW HIGH SCORE!</h3>
-            <p>점수: {score}</p>
-            <input
-              type="text"
-              placeholder="닉네임 입력"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value.slice(0, 20))}
-              onKeyDown={(e) => e.key === 'Enter' && submitScore()}
-              autoFocus
-            />
-            <div className="modal-buttons">
-              <button onClick={submitScore} className="submit-btn">등록</button>
-              <button onClick={() => setShowNicknameModal(false)} className="cancel-btn">취소</button>
-            </div>
-          </div>
-        </div>
+        <NicknameModal
+          score={score}
+          gameName="speed-click"
+          sessionId={sessionId}
+          onSubmit={handleNicknameSubmit}
+          onClose={() => setShowNicknameModal(false)}
+        />
       )}
     </div>
   );

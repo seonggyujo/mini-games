@@ -1,0 +1,401 @@
+.battle-lobby {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 600px;
+  padding: 2rem;
+}
+
+.lobby-content {
+  background: var(--card-bg);
+  padding: 2rem;
+  border-radius: 16px;
+  border: 2px solid var(--primary-color);
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lobby-title {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input-group label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.input-group input {
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.input-group input::placeholder {
+  color: var(--text-muted);
+}
+
+.btn-create,
+.btn-join,
+.btn-back,
+.btn-cancel,
+.btn-rematch,
+.btn-leave {
+  padding: 0.875rem 1.5rem;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-create {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-create:hover {
+  background: #7c3aed;
+  transform: translateY(-2px);
+}
+
+.btn-join {
+  background: #00b894;
+  color: white;
+}
+
+.btn-join:hover {
+  background: #00a382;
+  transform: translateY(-2px);
+}
+
+.btn-back {
+  background: transparent;
+  border: 2px solid var(--text-muted);
+  color: var(--text-muted);
+}
+
+.btn-back:hover {
+  border-color: var(--text-color);
+  color: var(--text-color);
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 2px solid #d63031;
+  color: #d63031;
+}
+
+.btn-cancel:hover {
+  background: #d63031;
+  color: white;
+}
+
+.btn-rematch {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-rematch:hover {
+  background: #7c3aed;
+  transform: translateY(-2px);
+}
+
+.btn-leave {
+  background: transparent;
+  border: 2px solid var(--text-muted);
+  color: var(--text-muted);
+}
+
+.btn-leave:hover {
+  border-color: var(--text-color);
+  color: var(--text-color);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.5rem 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.divider span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.error-message {
+  background: rgba(214, 48, 49, 0.1);
+  border: 1px solid #d63031;
+  color: #ff7675;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Waiting Screen */
+.waiting-screen {
+  background: var(--card-bg);
+  padding: 3rem 2rem;
+  border-radius: 16px;
+  border: 2px solid var(--primary-color);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.waiting-screen h2 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.2rem;
+  color: var(--text-color);
+}
+
+.room-code-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.room-code-display .label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.room-code-display .code {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 2rem;
+  color: var(--primary-color);
+  letter-spacing: 0.5rem;
+  background: var(--bg-color);
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  border: 2px dashed var(--primary-color);
+}
+
+.waiting-screen .hint {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.waiting-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Countdown Screen */
+.countdown-screen {
+  background: var(--card-bg);
+  padding: 4rem 3rem;
+  border-radius: 16px;
+  border: 2px solid var(--primary-color);
+  text-align: center;
+}
+
+.countdown-screen .vs-text {
+  font-size: 1.2rem;
+  color: var(--text-color);
+  margin-bottom: 2rem;
+}
+
+.countdown-number {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 6rem;
+  color: var(--primary-color);
+  animation: pulse 1s ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+/* Result Screen */
+.result-screen {
+  background: var(--card-bg);
+  padding: 3rem 2rem;
+  border-radius: 16px;
+  border: 2px solid var(--primary-color);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  min-width: 350px;
+}
+
+.result-title {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 2rem;
+}
+
+.result-title.win {
+  color: #00b894;
+  text-shadow: 0 0 20px rgba(0, 184, 148, 0.5);
+}
+
+.result-title.lose {
+  color: #d63031;
+  text-shadow: 0 0 20px rgba(214, 48, 49, 0.5);
+}
+
+.result-title.draw {
+  color: #fdcb6e;
+  text-shadow: 0 0 20px rgba(253, 203, 110, 0.5);
+}
+
+.result-scores {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.result-player {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.result-nickname {
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+.result-score {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.result-scores .vs {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.winner-text {
+  font-size: 1rem;
+  color: #00b894;
+}
+
+.result-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn-rematch.requested {
+  background: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.opponent-ready-text {
+  color: #00b894;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  animation: pulse-text 1s infinite;
+}
+
+.waiting-opponent-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .battle-lobby {
+    padding: 1rem;
+    min-height: auto;
+  }
+
+  .lobby-content {
+    padding: 1.5rem;
+  }
+
+  .lobby-title {
+    font-size: 1.2rem;
+  }
+
+  .room-code-display .code {
+    font-size: 1.5rem;
+    letter-spacing: 0.3rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .countdown-number {
+    font-size: 4rem;
+  }
+
+  .result-screen {
+    min-width: auto;
+    padding: 2rem 1.5rem;
+  }
+
+  .result-title {
+    font-size: 1.5rem;
+  }
+
+  .result-scores {
+    gap: 1rem;
+  }
+
+  .result-score {
+    font-size: 1.2rem;
+  }
+
+  .result-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-rematch,
+  .btn-leave {
+    width: 100%;
+  }
+}

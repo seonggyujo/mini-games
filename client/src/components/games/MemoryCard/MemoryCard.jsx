@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import NicknameModal from '../../common/NicknameModal';
+import useHighScore from '../../../hooks/useHighScore';
 import './MemoryCard.css';
 
 // 이모지 카드 세트
@@ -49,11 +51,8 @@ function MemoryCard() {
   const [moves, setMoves] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(() => {
-    return parseInt(localStorage.getItem('memory-card-highscore') || '0');
-  });
+  const [highScore, , checkAndUpdateHighScore] = useHighScore('memory-card');
   const [showNicknameModal, setShowNicknameModal] = useState(false);
-  const [nickname, setNickname] = useState('');
   const [isChecking, setIsChecking] = useState(false);
 
   const timerRef = useRef(null);
@@ -165,34 +164,10 @@ function MemoryCard() {
 
   // 게임 종료 시 최고 점수 체크
   useEffect(() => {
-    if ((gameState === 'win' || gameState === 'gameover') && score > highScore && score > 0) {
-      setHighScore(score);
-      localStorage.setItem('memory-card-highscore', score.toString());
+    if ((gameState === 'win' || gameState === 'gameover') && score > 0 && checkAndUpdateHighScore(score)) {
       setShowNicknameModal(true);
     }
-  }, [gameState, score, highScore]);
-
-  // 점수 제출
-  const submitScore = async () => {
-    if (!nickname.trim()) return;
-    
-    try {
-      await fetch('/api/scores', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nickname: nickname.trim(),
-          game: 'memory-card',
-          score: score
-        })
-      });
-    } catch (error) {
-      console.error('Failed to submit score:', error);
-    }
-    
-    setShowNicknameModal(false);
-    setNickname('');
-  };
+  }, [gameState, score, checkAndUpdateHighScore]);
 
   // 시간 포맷
   const formatTime = (seconds) => {
@@ -331,24 +306,12 @@ function MemoryCard() {
 
       {/* 닉네임 모달 */}
       {showNicknameModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3 className="pixel-font">NEW HIGH SCORE!</h3>
-            <p>점수: {score}</p>
-            <input
-              type="text"
-              placeholder="닉네임 입력"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value.slice(0, 20))}
-              onKeyDown={(e) => e.key === 'Enter' && submitScore()}
-              autoFocus
-            />
-            <div className="modal-buttons">
-              <button onClick={submitScore} className="submit-btn">등록</button>
-              <button onClick={() => setShowNicknameModal(false)} className="cancel-btn">취소</button>
-            </div>
-          </div>
-        </div>
+        <NicknameModal
+          score={score}
+          gameName="memory-card"
+          onSubmit={() => setShowNicknameModal(false)}
+          onClose={() => setShowNicknameModal(false)}
+        />
       )}
     </div>
   );

@@ -1,0 +1,365 @@
+.battle-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Score Board */
+.battle-score-board {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  padding: 1rem 2rem;
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 2px solid var(--primary-color);
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 120px;
+}
+
+.player-info.me {
+  align-items: flex-start;
+}
+
+.player-info.opponent {
+  align-items: flex-end;
+}
+
+.player-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.player-name {
+  font-size: 1rem;
+  color: var(--text-color);
+  font-weight: bold;
+}
+
+.player-score {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 2rem;
+  color: var(--primary-color);
+}
+
+.player-info.me .player-score {
+  color: #00b894;
+}
+
+.player-info.opponent .player-score {
+  color: #d63031;
+}
+
+.time-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.time-value {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 2.5rem;
+  color: var(--accent-color);
+}
+
+.time-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Game Area */
+.battle-game-area {
+  position: relative;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: crosshair;
+  border: 3px solid var(--primary-color);
+}
+
+/* Timer Bar */
+.timer-bar-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+.timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #00b894, #55efc4);
+  transition: width 0.016s linear;
+}
+
+.timer-bar.danger {
+  background: linear-gradient(90deg, #d63031, #ff7675);
+}
+
+/* Ball */
+.battle-ball {
+  position: absolute;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  z-index: 5;
+}
+
+.battle-ball:hover {
+  transform: scale(1.05);
+}
+
+.battle-ball.red {
+  background: radial-gradient(circle at 30% 30%, #ff7675, #d63031, #c0392b);
+  box-shadow: 0 0 20px rgba(214, 48, 49, 0.5);
+  animation: pulse-red 0.3s infinite alternate;
+}
+
+.battle-ball.blue {
+  background: radial-gradient(circle at 30% 30%, #74b9ff, #0984e3, #0652DD);
+  box-shadow: 0 0 20px rgba(9, 132, 227, 0.5);
+  animation: pulse-blue 0.5s infinite alternate;
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 15px rgba(214, 48, 49, 0.5); }
+  100% { box-shadow: 0 0 25px rgba(214, 48, 49, 0.8); }
+}
+
+@keyframes pulse-blue {
+  0% { box-shadow: 0 0 15px rgba(9, 132, 227, 0.5); }
+  100% { box-shadow: 0 0 20px rgba(9, 132, 227, 0.7); }
+}
+
+/* Click Effect */
+.click-effect {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.2rem;
+  pointer-events: none;
+  animation: floatUp 0.3s forwards;
+  z-index: 100;
+}
+
+.click-effect.success {
+  color: #00b894;
+  text-shadow: 0 0 10px rgba(0, 184, 148, 0.8);
+}
+
+.click-effect.wrong {
+  color: #d63031;
+  text-shadow: 0 0 10px rgba(214, 48, 49, 0.8);
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(1.5);
+  }
+}
+
+/* Last Result */
+.last-result {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+}
+
+.result-text {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.5rem;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  animation: fadeInOut 0.5s ease-out;
+}
+
+.result-text.me {
+  color: #00b894;
+  background: rgba(0, 184, 148, 0.2);
+  border: 2px solid #00b894;
+}
+
+.result-text.opponent {
+  color: #d63031;
+  background: rgba(214, 48, 49, 0.2);
+  border: 2px solid #d63031;
+}
+
+.result-text.timeout {
+  color: #fdcb6e;
+  background: rgba(253, 203, 110, 0.2);
+  border: 2px solid #fdcb6e;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+/* Waiting for ball */
+.waiting-ball {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-muted);
+  font-size: 1.2rem;
+}
+
+/* Instructions */
+.battle-instructions {
+  display: flex;
+  gap: 2rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.battle-instructions p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.battle-instructions .ball-icon {
+  font-size: 1.2rem;
+}
+
+.battle-instructions .ball-icon.red {
+  color: #d63031;
+}
+
+.battle-instructions .ball-icon.blue {
+  color: #0984e3;
+}
+
+/* Responsive */
+@media (max-width: 1280px) {
+  .battle-game-area {
+    width: 100% !important;
+    max-width: 900px !important;
+    height: 600px !important;
+  }
+}
+
+@media (max-width: 960px) {
+  .battle-game-area {
+    max-width: 700px !important;
+    height: 500px !important;
+  }
+
+  .battle-score-board {
+    padding: 0.75rem 1.5rem;
+  }
+
+  .player-score {
+    font-size: 1.5rem;
+  }
+
+  .time-value {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .battle-game-area {
+    max-width: 100% !important;
+    height: 400px !important;
+    border-radius: 8px;
+  }
+
+  .battle-score-board {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+  }
+
+  .player-info {
+    min-width: 80px;
+  }
+
+  .player-name {
+    font-size: 0.85rem;
+  }
+
+  .player-score {
+    font-size: 1.2rem;
+  }
+
+  .time-value {
+    font-size: 1.5rem;
+  }
+
+  .battle-instructions {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+    font-size: 0.8rem;
+  }
+
+  .result-text {
+    font-size: 1rem;
+    padding: 0.75rem 1.5rem;
+  }
+
+  .battle-ball {
+    min-width: 50px !important;
+    min-height: 50px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .battle-game-area {
+    height: 320px !important;
+  }
+
+  .player-label {
+    font-size: 0.65rem;
+  }
+
+  .player-name {
+    font-size: 0.75rem;
+  }
+
+  .player-score {
+    font-size: 1rem;
+  }
+
+  .time-value {
+    font-size: 1.2rem;
+  }
+
+  .battle-ball {
+    min-width: 40px !important;
+    min-height: 40px !important;
+  }
+
+  .click-effect {
+    font-size: 0.9rem;
+  }
+
+  .result-text {
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+  }
+}

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -16,11 +17,85 @@ type visitor struct {
 	count    int
 }
 
+// getClientIP extracts the real client IP from the request
+func getClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header first (for reverse proxies)
+	xff := r.Header.Get("X-Forwarded-For")
+	if xff != "" {
+		// X-Forwarded-For can be comma-separated, take the first IP
+		ips := net.ParseIP(xff)
+		if ips != nil {
+			return ips.String()
+		}
+		// If the header contains comma-separated values
+		for _, ip := range splitHeader(xff) {
+			if parsedIP := net.ParseIP(ip); parsedIP != nil {
+				return parsedIP.String()
+			}
+		}
+	}
+
+	// Check X-Real-IP header
+	xri := r.Header.Get("X-Real-IP")
+	if xri != "" {
+		if ip := net.ParseIP(xri); ip != nil {
+			return ip.String()
+		}
+	}
+
+	// Fall back to RemoteAddr, removing port
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		// RemoteAddr might not have port
+		return r.RemoteAddr
+	}
+	return host
+}
+
+// splitHeader splits comma-separated header values
+func splitHeader(header string) []string {
+	var result []string
+	for _, part := range splitBy(header, ',') {
+		trimmed := trimSpace(part)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
+}
+
+func splitBy(s string, sep rune) []string {
+	var result []string
+	var current string
+	for _, c := range s {
+		if c == sep {
+			result = append(result, current)
+			current = ""
+		} else {
+			current += string(c)
+		}
+	}
+	result = append(result, current)
+	return result
+}
+
+func trimSpace(s string) string {
+	start := 0
+	end := len(s)
+	for start < end && (s[start] == ' ' || s[start] == '\t') {
+		start++
+	}
+	for end > start && (s[end-1] == ' ' || s[end-1] == '\t') {
+		end--
+	}
+	return s[start:end]
+}
+
 func RateLimit(next http.Handler) http.Handler {
 	go cleanupVisitors()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := r.RemoteAddr
+		ip := getClientIP(r)
 
 		mu.Lock()
 		v, exists := visitors[ip]

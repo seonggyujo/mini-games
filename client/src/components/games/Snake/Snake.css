@@ -41,25 +41,17 @@
 
 .game-area {
   position: relative;
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+  background: 
+    linear-gradient(rgba(108, 92, 231, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108, 92, 231, 0.1) 1px, transparent 1px),
+    linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+  background-size: 
+    var(--cell-size, 50px) var(--cell-size, 50px),
+    var(--cell-size, 50px) var(--cell-size, 50px),
+    100% 100%;
   border-radius: 12px;
   overflow: hidden;
   border: 3px solid var(--primary-color);
-}
-
-/* 그리드 배경 */
-.grid-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  flex-wrap: wrap;
-  opacity: 0.1;
-}
-
-.grid-cell {
-  box-sizing: border-box;
-  border: 1px solid var(--primary-color);
 }
 
 /* 뱀 */
@@ -363,4 +355,124 @@
 .submit-btn:hover,
 .cancel-btn:hover {
   transform: scale(1.05);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1080px) {
+  .game-area {
+    width: 100% !important;
+    max-width: 700px !important;
+    height: 700px !important;
+  }
+  
+  .snake-segment {
+    border-radius: 4px;
+  }
+  
+  .food {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-area {
+    max-width: 100% !important;
+    width: calc(100vw - 2rem) !important;
+    height: calc(100vw - 2rem) !important;
+    max-height: 500px !important;
+    border-radius: 8px;
+  }
+  
+  .score-board {
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .score-value,
+  .level-value,
+  .best-value {
+    font-size: 1.2rem;
+  }
+  
+  .game-overlay h2 {
+    font-size: 1.5rem;
+  }
+  
+  .level-btn {
+    min-width: 200px;
+    padding: 0.75rem 1.5rem;
+  }
+  
+  .level-name {
+    font-size: 0.9rem;
+  }
+  
+  .level-desc {
+    font-size: 0.7rem;
+  }
+  
+  .food {
+    font-size: 24px;
+  }
+  
+  .snake-segment.head::before,
+  .snake-segment.head::after {
+    width: 6px;
+    height: 6px;
+    top: 4px;
+  }
+  
+  .snake-segment.head::before {
+    left: 4px;
+  }
+  
+  .snake-segment.head::after {
+    right: 4px;
+  }
+  
+  .mobile-controls {
+    display: flex;
+  }
+  
+  .game-instructions {
+    font-size: 0.8rem;
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-area {
+    max-height: 350px !important;
+  }
+  
+  .score-board {
+    gap: 1rem;
+  }
+  
+  .score-value,
+  .level-value,
+  .best-value {
+    font-size: 1rem;
+  }
+  
+  .current-score span:first-child,
+  .level-display span:first-child,
+  .high-score span:first-child {
+    font-size: 0.7rem;
+  }
+  
+  .control-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
+  
+  .game-overlay h2 {
+    font-size: 1.2rem;
+  }
+  
+  .food {
+    font-size: 18px;
+  }
 }
