@@ -23,6 +23,8 @@ function JumpRunner() {
   const [obstacles, setObstacles] = useState([]);
   const [speed, setSpeed] = useState(INITIAL_SPEED);
   const [showNicknameModal, setShowNicknameModal] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [finalScore, setFinalScore] = useState(0);
   
   const playerVelocityRef = useRef(0);
   const isJumpingRef = useRef(false);
@@ -31,6 +33,7 @@ function JumpRunner() {
   const lastTimeRef = useRef(0);
   const speedRef = useRef(INITIAL_SPEED);
   const scoreRef = useRef(0);
+  const gameStartTimeRef = useRef(0);
 
   // Jump handler
   const jump = useCallback(() => {
@@ -59,19 +62,37 @@ function JumpRunner() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [gameState, jump]);
 
-  // Start game
-  const startGame = () => {
-    setGameState('playing');
-    setScore(0);
-    setPlayerY(0);
-    setObstacles([]);
-    setSpeed(INITIAL_SPEED);
-    playerVelocityRef.current = 0;
-    isJumpingRef.current = false;
-    obstacleTimerRef.current = 0;
-    lastTimeRef.current = 0;
-    speedRef.current = INITIAL_SPEED;
-    scoreRef.current = 0;
+  // Start game - 서버에서 세션 발급
+  const startGame = async () => {
+    try {
+      const response = await fetch('/api/game/jumprunner/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to start game session');
+        return;
+      }
+      
+      const data = await response.json();
+      setSessionId(data.sessionId);
+      gameStartTimeRef.current = Date.now();
+      
+      setGameState('playing');
+      setScore(0);
+      setPlayerY(0);
+      setObstacles([]);
+      setSpeed(INITIAL_SPEED);
+      playerVelocityRef.current = 0;
+      isJumpingRef.current = false;
+      obstacleTimerRef.current = 0;
+      lastTimeRef.current = 0;
+      speedRef.current = INITIAL_SPEED;
+      scoreRef.current = 0;
+    } catch (err) {
+      console.error('Failed to start game:', err);
+    }
   };
 
   // Reset game
@@ -84,6 +105,64 @@ function JumpRunner() {
     lastTimeRef.current = 0;
     speedRef.current = INITIAL_SPEED;
     scoreRef.current = 0;
+    setSessionId(null);
+    setFinalScore(0);
+  };
+
+  // End game - 서버에 결과 전송
+  const endGame = async (currentScore) => {
+    if (!sessionId) return;
+    
+    const playTimeMs = Date.now() - gameStartTimeRef.current;
+    
+    try {
+      const response = await fetch('/api/game/jumprunner/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          playTimeMs,
+          score: currentScore
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.valid && data.canSubmit) {
+          setFinalScore(data.finalScore);
+          if (checkAndUpdateHighScore(data.finalScore)) {
+            setShowNicknameModal(true);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to end game:', err);
+    }
+  };
+
+  // Submit score handler
+  const handleSubmitScore = async (nickname) => {
+    if (!sessionId) return;
+    
+    try {
+      const response = await fetch('/api/game/jumprunner/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          nickname
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit score');
+      }
+      
+      setShowNicknameModal(false);
+    } catch (err) {
+      console.error('Failed to submit score:', err);
+      throw err;
+    }
   };
 
   // Game loop
@@ -173,13 +252,11 @@ function JumpRunner() {
       ) {
         // Collision detected
         setGameState('gameover');
-        if (checkAndUpdateHighScore(score)) {
-          setShowNicknameModal(true);
-        }
+        endGame(Math.floor(scoreRef.current));
         break;
       }
     }
-  }, [obstacles, playerY, gameState, score, checkAndUpdateHighScore]);
+  }, [obstacles, playerY, gameState]);
 
   // Calculate speed level (every 2 speed increase = 1 level)
   const speedLevel = Math.floor((speed - INITIAL_SPEED) / 2) + 1;
@@ -276,7 +353,7 @@ function JumpRunner() {
         {gameState === 'gameover' && (
           <div className="game-overlay gameover">
             <h2 className="pixel-font">GAME OVER</h2>
-            <p>점수: {formatScore(score)}</p>
+            <p>점수: {formatScore(finalScore || score)}</p>
             <p className="hint">SPACE 또는 클릭으로 재시작</p>
           </div>
         )}
@@ -289,10 +366,11 @@ function JumpRunner() {
       {/* Nickname modal */}
       {showNicknameModal && (
         <NicknameModal
-          score={score}
+          score={finalScore}
           gameName="jump-runner"
+          sessionId={sessionId}
           formatScore={formatScore}
-          onSubmit={() => setShowNicknameModal(false)}
+          onSubmit={handleSubmitScore}
           onClose={() => setShowNicknameModal(false)}
         />
       )}

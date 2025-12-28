@@ -54,46 +54,58 @@ function MemoryCard() {
   const [highScore, , checkAndUpdateHighScore] = useHighScore('memory-card');
   const [showNicknameModal, setShowNicknameModal] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [finalScore, setFinalScore] = useState(0);
 
   const timerRef = useRef(null);
 
-  // 카드 셔플
-  const shuffleCards = useCallback((pairCount) => {
-    const selectedEmojis = CARD_EMOJIS.slice(0, pairCount);
-    const cardPairs = [...selectedEmojis, ...selectedEmojis];
-    
-    // Fisher-Yates 셔플
-    for (let i = cardPairs.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [cardPairs[i], cardPairs[j]] = [cardPairs[j], cardPairs[i]];
+  // 게임 시작 - 서버에서 세션 및 카드 배치 발급
+  const startGame = useCallback(async (selectedLevel) => {
+    try {
+      const response = await fetch('/api/game/memorycard/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ level: selectedLevel })
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to start game session');
+        return;
+      }
+      
+      const data = await response.json();
+      setSessionId(data.sessionId);
+      
+      // 서버에서 받은 카드 배치를 이모지로 변환
+      const serverCards = data.cards.map((emojiIndex, index) => ({
+        id: index,
+        emoji: CARD_EMOJIS[emojiIndex],
+        emojiIndex: emojiIndex,
+        isFlipped: false,
+        isMatched: false
+      }));
+      
+      const config = LEVEL_CONFIG[selectedLevel];
+      setLevel(selectedLevel);
+      setCards(serverCards);
+      setFlipped([]);
+      setMatched([]);
+      setMoves(0);
+      setTimeLeft(data.timeLimit || config.timeLimit);
+      setScore(0);
+      setIsChecking(false);
+      setGameState('playing');
+    } catch (err) {
+      console.error('Failed to start game:', err);
     }
-
-    return cardPairs.map((emoji, index) => ({
-      id: index,
-      emoji,
-      isFlipped: false,
-      isMatched: false
-    }));
   }, []);
-
-  // 게임 시작
-  const startGame = useCallback((selectedLevel) => {
-    const config = LEVEL_CONFIG[selectedLevel];
-    setLevel(selectedLevel);
-    setCards(shuffleCards(config.pairs));
-    setFlipped([]);
-    setMatched([]);
-    setMoves(0);
-    setTimeLeft(config.timeLimit);
-    setScore(0);
-    setIsChecking(false);
-    setGameState('playing');
-  }, [shuffleCards]);
 
   // 게임 리셋
   const resetGame = () => {
     clearInterval(timerRef.current);
     setGameState('levelSelect');
+    setSessionId(null);
+    setFinalScore(0);
   };
 
   // 타이머
@@ -104,6 +116,7 @@ function MemoryCard() {
       setTimeLeft(prev => {
         if (prev <= 1) {
           setGameState('gameover');
+          endGame();
           return 0;
         }
         return prev - 1;
@@ -113,8 +126,78 @@ function MemoryCard() {
     return () => clearInterval(timerRef.current);
   }, [gameState]);
 
+  // 매칭 시도 - 서버에 보고
+  const reportMatch = async (card1, card2) => {
+    if (!sessionId) return null;
+    
+    try {
+      const response = await fetch('/api/game/memorycard/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, card1, card2 })
+      });
+      
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (err) {
+      console.error('Failed to report match:', err);
+    }
+    return null;
+  };
+
+  // 게임 종료 - 서버에 결과 전송
+  const endGame = async () => {
+    if (!sessionId) return;
+    
+    try {
+      const response = await fetch('/api/game/memorycard/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.valid) {
+          setFinalScore(data.finalScore);
+          if (data.canSubmit && checkAndUpdateHighScore(data.finalScore)) {
+            setShowNicknameModal(true);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to end game:', err);
+    }
+  };
+
+  // Submit score handler
+  const handleSubmitScore = async (nickname) => {
+    if (!sessionId) return;
+    
+    try {
+      const response = await fetch('/api/game/memorycard/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          nickname
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit score');
+      }
+      
+      setShowNicknameModal(false);
+    } catch (err) {
+      console.error('Failed to submit score:', err);
+      throw err;
+    }
+  };
+
   // 카드 클릭 처리
-  const handleCardClick = (index) => {
+  const handleCardClick = async (index) => {
     if (gameState !== 'playing') return;
     if (isChecking) return;
     if (flipped.includes(index)) return;
@@ -130,19 +213,38 @@ function MemoryCard() {
 
       const [first, second] = newFlipped;
       
-      if (cards[first].emoji === cards[second].emoji) {
-        // 매칭 성공
-        setTimeout(() => {
-          setMatched(prev => [...prev, first, second]);
-          setFlipped([]);
-          setIsChecking(false);
-        }, 500);
+      // 서버에 매칭 보고
+      const result = await reportMatch(first, second);
+      
+      if (result && result.valid) {
+        if (result.isMatch) {
+          // 매칭 성공
+          setTimeout(() => {
+            setMatched(prev => [...prev, first, second]);
+            setFlipped([]);
+            setIsChecking(false);
+          }, 500);
+        } else {
+          // 매칭 실패
+          setTimeout(() => {
+            setFlipped([]);
+            setIsChecking(false);
+          }, 1000);
+        }
       } else {
-        // 매칭 실패
-        setTimeout(() => {
-          setFlipped([]);
-          setIsChecking(false);
-        }, 1000);
+        // 서버 오류 시 클라이언트 기준으로 처리
+        if (cards[first].emoji === cards[second].emoji) {
+          setTimeout(() => {
+            setMatched(prev => [...prev, first, second]);
+            setFlipped([]);
+            setIsChecking(false);
+          }, 500);
+        } else {
+          setTimeout(() => {
+            setFlipped([]);
+            setIsChecking(false);
+          }, 1000);
+        }
       }
     }
   };
@@ -154,20 +256,10 @@ function MemoryCard() {
     const config = LEVEL_CONFIG[level];
     if (matched.length === config.pairs * 2) {
       clearInterval(timerRef.current);
-      
-      // 점수 계산: (남은 시간 × 10) + 레벨 보너스 - (이동 횟수 × 2)
-      const finalScore = Math.max(0, (timeLeft * 10) + config.bonus - (moves * 2));
-      setScore(finalScore);
       setGameState('win');
+      endGame();
     }
-  }, [matched, gameState, level, timeLeft, moves]);
-
-  // 게임 종료 시 최고 점수 체크
-  useEffect(() => {
-    if ((gameState === 'win' || gameState === 'gameover') && score > 0 && checkAndUpdateHighScore(score)) {
-      setShowNicknameModal(true);
-    }
-  }, [gameState, score, checkAndUpdateHighScore]);
+  }, [matched, gameState, level]);
 
   // 시간 포맷
   const formatTime = (seconds) => {
@@ -279,7 +371,7 @@ function MemoryCard() {
         {gameState === 'win' && (
           <div className="game-overlay result win">
             <h2 className="pixel-font">YOU WIN!</h2>
-            <p className="final-score">점수: {score}</p>
+            <p className="final-score">점수: {finalScore}</p>
             <p className="final-detail">남은 시간: {formatTime(timeLeft)} | 이동 횟수: {moves}</p>
             <button className="restart-btn" onClick={resetGame}>
               다시 하기
@@ -307,9 +399,10 @@ function MemoryCard() {
       {/* 닉네임 모달 */}
       {showNicknameModal && (
         <NicknameModal
-          score={score}
+          score={finalScore}
           gameName="memory-card"
-          onSubmit={() => setShowNicknameModal(false)}
+          sessionId={sessionId}
+          onSubmit={handleSubmitScore}
           onClose={() => setShowNicknameModal(false)}
         />
       )}

@@ -39,6 +39,8 @@ function Snake() {
   const [highScore, , checkAndUpdateHighScore] = useHighScore('snake');
   const [showNicknameModal, setShowNicknameModal] = useState(false);
   const [currentSpeed, setCurrentSpeed] = useState(150);
+  const [sessionId, setSessionId] = useState(null);
+  const [finalScore, setFinalScore] = useState(0);
 
   const gameLoopRef = useRef(null);
   const directionRef = useRef(direction);
@@ -61,23 +63,114 @@ function Snake() {
     return newFood;
   }, []);
 
-  // 게임 시작
-  const startGame = useCallback((selectedLevel) => {
-    const config = LEVEL_CONFIG[selectedLevel];
-    setLevel(selectedLevel);
-    setSnake([{ x: 10, y: 10 }]);
-    setDirection('RIGHT');
-    directionRef.current = 'RIGHT';
-    directionQueueRef.current = [];
-    setFood({ x: 15, y: 10 });
-    setScore(0);
-    setCurrentSpeed(config.speed);
-    setGameState('playing');
+  // 게임 시작 - 서버에서 세션 발급
+  const startGame = useCallback(async (selectedLevel) => {
+    try {
+      const response = await fetch('/api/game/snake/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ level: selectedLevel })
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to start game session');
+        return;
+      }
+      
+      const data = await response.json();
+      setSessionId(data.sessionId);
+      
+      const config = LEVEL_CONFIG[selectedLevel];
+      setLevel(selectedLevel);
+      setSnake([{ x: 10, y: 10 }]);
+      setDirection('RIGHT');
+      directionRef.current = 'RIGHT';
+      directionQueueRef.current = [];
+      setFood({ x: 15, y: 10 });
+      setScore(0);
+      setCurrentSpeed(config.speed);
+      setGameState('playing');
+    } catch (err) {
+      console.error('Failed to start game:', err);
+    }
   }, []);
 
   // 게임 리셋
   const resetGame = () => {
     setGameState('levelSelect');
+    setSessionId(null);
+    setFinalScore(0);
+  };
+
+  // 음식 먹기 - 서버에 보고
+  const reportEat = async () => {
+    if (!sessionId) return null;
+    
+    try {
+      const response = await fetch('/api/game/snake/eat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+    } catch (err) {
+      console.error('Failed to report eat:', err);
+    }
+    return null;
+  };
+
+  // 게임 종료 - 서버에 결과 전송
+  const endGame = async () => {
+    if (!sessionId) return;
+    
+    try {
+      const response = await fetch('/api/game/snake/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.valid) {
+          setFinalScore(data.finalScore);
+          if (data.canSubmit && checkAndUpdateHighScore(data.finalScore)) {
+            setShowNicknameModal(true);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to end game:', err);
+    }
+  };
+
+  // Submit score handler
+  const handleSubmitScore = async (nickname) => {
+    if (!sessionId) return;
+    
+    try {
+      const response = await fetch('/api/game/snake/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          nickname
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit score');
+      }
+      
+      setShowNicknameModal(false);
+    } catch (err) {
+      console.error('Failed to submit score:', err);
+      throw err;
+    }
   };
 
   // 게임 루프
@@ -86,7 +179,7 @@ function Snake() {
 
     const config = LEVEL_CONFIG[level];
 
-    const moveSnake = () => {
+    const moveSnake = async () => {
       // 방향 큐에서 다음 방향 가져오기
       if (directionQueueRef.current.length > 0) {
         const nextDir = directionQueueRef.current.shift();
@@ -108,12 +201,14 @@ function Snake() {
         if (newHead.x < 0 || newHead.x >= GRID_SIZE || 
             newHead.y < 0 || newHead.y >= GRID_SIZE) {
           setGameState('gameover');
+          endGame();
           return prevSnake;
         }
 
         // 자기 몸 충돌 체크
         if (prevSnake.some(segment => segment.x === newHead.x && segment.y === newHead.y)) {
           setGameState('gameover');
+          endGame();
           return prevSnake;
         }
 
@@ -122,14 +217,17 @@ function Snake() {
         // 음식 먹기 체크
         setFood(prevFood => {
           if (newHead.x === prevFood.x && newHead.y === prevFood.y) {
-            setScore(s => {
-              const newScore = s + 10;
-              // 속도 증가 (레벨에 따라)
-              if (config.speedIncrease > 0) {
-                setCurrentSpeed(speed => Math.max(config.minSpeed, speed - config.speedIncrease));
+            // 서버에 먹기 보고
+            reportEat().then(data => {
+              if (data && data.valid) {
+                setScore(data.score);
               }
-              return newScore;
             });
+            
+            // 속도 증가 (레벨에 따라)
+            if (config.speedIncrease > 0) {
+              setCurrentSpeed(speed => Math.max(config.minSpeed, speed - config.speedIncrease));
+            }
             return generateFood(newSnake);
           }
           return prevFood;
@@ -220,19 +318,12 @@ function Snake() {
     }
   };
 
-  // 게임 오버 시 최고 점수 체크
-  useEffect(() => {
-    if (gameState === 'gameover' && checkAndUpdateHighScore(score)) {
-      setShowNicknameModal(true);
-    }
-  }, [gameState, score, checkAndUpdateHighScore]);
-
   return (
     <div className="snake-container">
       <div className="score-board">
         <div className="current-score">
           <span>SCORE</span>
-          <span className="score-value">{score}</span>
+          <span className="score-value">{gameState === 'gameover' ? finalScore : score}</span>
         </div>
         {level && (
           <div className="level-display">
@@ -332,7 +423,7 @@ function Snake() {
         {gameState === 'gameover' && (
           <div className="game-overlay gameover">
             <h2 className="pixel-font">GAME OVER</h2>
-            <p className="final-score">최종 점수: {score}</p>
+            <p className="final-score">최종 점수: {finalScore}</p>
             <p className="snake-length">뱀 길이: {snake.length}</p>
             <button className="restart-btn" onClick={resetGame}>
               다시 하기
@@ -387,9 +478,10 @@ function Snake() {
       {/* 닉네임 모달 */}
       {showNicknameModal && (
         <NicknameModal
-          score={score}
+          score={finalScore}
           gameName="snake"
-          onSubmit={() => setShowNicknameModal(false)}
+          sessionId={sessionId}
+          onSubmit={handleSubmitScore}
           onClose={() => setShowNicknameModal(false)}
         />
       )}

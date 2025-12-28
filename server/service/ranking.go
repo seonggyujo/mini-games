@@ -21,10 +21,12 @@ func GetRanking(game string, limit int) ([]model.Score, error) {
 		limit = 10
 	}
 
+	// 닉네임별 최고 점수만 조회 (중복 제거)
 	rows, err := database.DB.Query(
-		`SELECT id, nickname, game, score, created_at 
+		`SELECT MIN(id) as id, nickname, game, MAX(score) as score, MAX(created_at) as created_at 
 		 FROM scores 
 		 WHERE game = ? 
+		 GROUP BY nickname
 		 ORDER BY score DESC 
 		 LIMIT ?`,
 		game, limit,

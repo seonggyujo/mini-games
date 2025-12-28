@@ -6,16 +6,16 @@ import (
 
 // GameSession represents an active game session
 type GameSession struct {
-	ID           string        `json:"id"`
-	Game         string        `json:"game"`
-	Seed         int64         `json:"seed"`
-	StartTime    time.Time     `json:"start_time"`
-	Score        int           `json:"score"`
-	Lives        int           `json:"lives"`
-	CurrentBall  int           `json:"current_ball"`  // 현재 공 인덱스
-	BallSpawnTime int64        `json:"ball_spawn_time"` // 현재 공 생성 시간 (ms)
-	Clicks       []ClickRecord `json:"clicks"`
-	Status       string        `json:"status"` // "playing", "ended", "submitted"
+	ID            string        `json:"id"`
+	Game          string        `json:"game"`
+	Seed          int64         `json:"seed"`
+	StartTime     time.Time     `json:"start_time"`
+	Score         int           `json:"score"`
+	Lives         int           `json:"lives"`
+	CurrentBall   int           `json:"current_ball"`    // 현재 공 인덱스
+	BallSpawnTime int64         `json:"ball_spawn_time"` // 현재 공 생성 시간 (ms)
+	Clicks        []ClickRecord `json:"clicks"`
+	Status        string        `json:"status"` // "playing", "ended", "submitted"
 }
 
 // ClickRecord represents a single click during a game
@@ -105,4 +105,144 @@ type SubmitScoreRequest struct {
 type SubmitScoreResponse struct {
 	Success bool  `json:"success"`
 	ScoreID int64 `json:"scoreId,omitempty"`
+}
+
+// ========== Jump Runner Models ==========
+
+// JumpRunnerSession represents an active Jump Runner game session
+type JumpRunnerSession struct {
+	ID        string    `json:"id"`
+	Seed      int64     `json:"seed"`
+	StartTime time.Time `json:"start_time"`
+	EndTime   time.Time `json:"end_time"`
+	Score     int       `json:"score"`
+	Status    string    `json:"status"` // "playing", "ended", "submitted"
+}
+
+// JumpRunnerStartResponse is the response for Jump Runner game start
+type JumpRunnerStartResponse struct {
+	SessionID string `json:"sessionId"`
+	Seed      int64  `json:"seed"`
+	StartTime int64  `json:"startTime"`
+}
+
+// JumpRunnerEndRequest is the request for ending Jump Runner game
+type JumpRunnerEndRequest struct {
+	SessionID  string `json:"sessionId"`
+	PlayTimeMs int64  `json:"playTimeMs"`
+	Score      int    `json:"score"`
+}
+
+// JumpRunnerEndResponse is the response for Jump Runner game end
+type JumpRunnerEndResponse struct {
+	Valid      bool `json:"valid"`
+	FinalScore int  `json:"finalScore"`
+	CanSubmit  bool `json:"canSubmit"`
+}
+
+// ========== Snake Models ==========
+
+// SnakeSession represents an active Snake game session
+type SnakeSession struct {
+	ID        string    `json:"id"`
+	Seed      int64     `json:"seed"`
+	Level     string    `json:"level"`
+	StartTime time.Time `json:"start_time"`
+	EatCount  int       `json:"eat_count"`
+	Score     int       `json:"score"`
+	Status    string    `json:"status"` // "playing", "ended", "submitted"
+}
+
+// SnakeStartRequest is the request for Snake game start
+type SnakeStartRequest struct {
+	Level string `json:"level"`
+}
+
+// SnakeStartResponse is the response for Snake game start
+type SnakeStartResponse struct {
+	SessionID string `json:"sessionId"`
+	Seed      int64  `json:"seed"`
+	StartTime int64  `json:"startTime"`
+}
+
+// SnakeEatRequest is the request for reporting food eaten
+type SnakeEatRequest struct {
+	SessionID string `json:"sessionId"`
+}
+
+// SnakeEatResponse is the response for food eaten
+type SnakeEatResponse struct {
+	Valid    bool `json:"valid"`
+	EatCount int  `json:"eatCount"`
+	Score    int  `json:"score"`
+}
+
+// SnakeEndRequest is the request for ending Snake game
+type SnakeEndRequest struct {
+	SessionID string `json:"sessionId"`
+}
+
+// SnakeEndResponse is the response for Snake game end
+type SnakeEndResponse struct {
+	Valid      bool `json:"valid"`
+	FinalScore int  `json:"finalScore"`
+	CanSubmit  bool `json:"canSubmit"`
+}
+
+// ========== Memory Card Models ==========
+
+// MemoryCardSession represents an active Memory Card game session
+type MemoryCardSession struct {
+	ID         string    `json:"id"`
+	Seed       int64     `json:"seed"`
+	Level      string    `json:"level"`
+	StartTime  time.Time `json:"start_time"`
+	TimeLimit  int       `json:"time_limit"`
+	Cards      []int     `json:"cards"` // Card layout (emoji indices)
+	MatchCount int       `json:"match_count"`
+	Moves      int       `json:"moves"`
+	TotalPairs int       `json:"total_pairs"`
+	Score      int       `json:"score"`
+	Status     string    `json:"status"` // "playing", "ended", "submitted"
+}
+
+// MemoryCardStartRequest is the request for Memory Card game start
+type MemoryCardStartRequest struct {
+	Level string `json:"level"`
+}
+
+// MemoryCardStartResponse is the response for Memory Card game start
+type MemoryCardStartResponse struct {
+	SessionID string `json:"sessionId"`
+	Seed      int64  `json:"seed"`
+	StartTime int64  `json:"startTime"`
+	Cards     []int  `json:"cards"`
+	TimeLimit int    `json:"timeLimit"`
+}
+
+// MemoryCardMatchRequest is the request for reporting a match attempt
+type MemoryCardMatchRequest struct {
+	SessionID string `json:"sessionId"`
+	Card1     int    `json:"card1"`
+	Card2     int    `json:"card2"`
+}
+
+// MemoryCardMatchResponse is the response for match attempt
+type MemoryCardMatchResponse struct {
+	Valid      bool `json:"valid"`
+	IsMatch    bool `json:"isMatch"`
+	MatchCount int  `json:"matchCount"`
+	Moves      int  `json:"moves"`
+}
+
+// MemoryCardEndRequest is the request for ending Memory Card game
+type MemoryCardEndRequest struct {
+	SessionID string `json:"sessionId"`
+}
+
+// MemoryCardEndResponse is the response for Memory Card game end
+type MemoryCardEndResponse struct {
+	Valid      bool `json:"valid"`
+	FinalScore int  `json:"finalScore"`
+	CanSubmit  bool `json:"canSubmit"`
 }

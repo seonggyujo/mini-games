@@ -44,6 +44,23 @@ func main() {
 	mux.HandleFunc("/api/game/speedclick/end", handler.HandleSpeedClickEnd)
 	mux.HandleFunc("/api/game/speedclick/submit", handler.HandleSpeedClickSubmit)
 
+	// JumpRunner game API routes
+	mux.HandleFunc("/api/game/jumprunner/start", handler.HandleJumpRunnerStart)
+	mux.HandleFunc("/api/game/jumprunner/end", handler.HandleJumpRunnerEnd)
+	mux.HandleFunc("/api/game/jumprunner/submit", handler.HandleJumpRunnerSubmit)
+
+	// Snake game API routes
+	mux.HandleFunc("/api/game/snake/start", handler.HandleSnakeStart)
+	mux.HandleFunc("/api/game/snake/eat", handler.HandleSnakeEat)
+	mux.HandleFunc("/api/game/snake/end", handler.HandleSnakeEnd)
+	mux.HandleFunc("/api/game/snake/submit", handler.HandleSnakeSubmit)
+
+	// MemoryCard game API routes
+	mux.HandleFunc("/api/game/memorycard/start", handler.HandleMemoryCardStart)
+	mux.HandleFunc("/api/game/memorycard/match", handler.HandleMemoryCardMatch)
+	mux.HandleFunc("/api/game/memorycard/end", handler.HandleMemoryCardEnd)
+	mux.HandleFunc("/api/game/memorycard/submit", handler.HandleMemoryCardSubmit)
+
 	// Apply middleware to API routes (order: Logging -> CORS -> RateLimit)
 	apiHandler := middleware.Logging(middleware.CORS(middleware.RateLimit(mux)))
 
