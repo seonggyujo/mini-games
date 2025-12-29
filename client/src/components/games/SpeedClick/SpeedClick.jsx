@@ -80,6 +80,43 @@ function SpeedClick() {
     return () => clearTimeout(timeout);
   }, [gameState, nextBall, spawnBall]);
 
+  // 공 타이머 (시간 감소 + 시간 초과 처리)
+  useEffect(() => {
+    if (gameState !== 'playing' || !ball) return;
+
+    const timer = setInterval(() => {
+      setBall(prev => {
+        if (!prev) return null;
+        
+        const newTimeLeft = prev.timeLeft - 0.016; // 16ms마다 감소
+        
+        if (newTimeLeft <= 0) {
+          // 시간 초과 - 서버에 miss 보고
+          reportMiss(prev.index).then(response => {
+            if (response.valid) {
+              if (response.isRed) {
+                setLives(response.lives);
+                setClickEffect({ x: prev.x, y: prev.y, type: 'miss' });
+                setTimeout(() => setClickEffect(null), 300);
+              }
+              if (response.gameOver) {
+                setGameState('gameover');
+              } else if (response.nextBall) {
+                setNextBall(response.nextBall);
+              }
+            }
+          }).catch(console.error);
+          
+          return null; // 공 제거
+        }
+        
+        return { ...prev, timeLeft: newTimeLeft };
+      });
+    }, 16);
+
+    return () => clearInterval(timer);
+  }, [gameState, ball, reportMiss]);
+
   // 공 클릭 처리
   const handleBallClick = async (e) => {
     e.stopPropagation();
