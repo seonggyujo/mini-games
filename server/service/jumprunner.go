@@ -52,7 +52,8 @@ func CreateJumpRunnerSession() *model.JumpRunnerSession {
 }
 
 // EndJumpRunnerSession ends a Jump Runner game session and validates the score
-func EndJumpRunnerSession(sessionID string, playTimeMs int64, clientScore int) model.JumpRunnerEndResponse {
+// 클라이언트 점수를 무시하고 서버에서 플레이 시간 기반으로 점수 계산
+func EndJumpRunnerSession(sessionID string, playTimeMs int64) model.JumpRunnerEndResponse {
 	jumpRunnerMutex.Lock()
 	defer jumpRunnerMutex.Unlock()
 
@@ -65,32 +66,26 @@ func EndJumpRunnerSession(sessionID string, playTimeMs int64, clientScore int) m
 		return model.JumpRunnerEndResponse{Valid: false, FinalScore: 0, CanSubmit: false}
 	}
 
-	// 실제 경과 시간 계산
+	// 실제 경과 시간 계산 (서버 기준)
 	actualPlayTime := time.Since(session.StartTime).Milliseconds()
 
 	// 검증 1: 최소 플레이 시간 체크
-	if playTimeMs < jumpRunnerMinPlayTime {
+	if actualPlayTime < jumpRunnerMinPlayTime {
 		return model.JumpRunnerEndResponse{Valid: false, FinalScore: 0, CanSubmit: false}
 	}
 
-	// 검증 2: 플레이 시간과 실제 경과 시간 비교 (허용 오차 내)
+	// 검증 2: 클라이언트 시간과 서버 시간 비교 (허용 오차 내)
 	timeDiff := actualPlayTime - playTimeMs
-	if timeDiff < -jumpRunnerTimeAllowance {
-		// 클라이언트가 보고한 시간이 실제보다 너무 길면 의심
+	if timeDiff < -jumpRunnerTimeAllowance || timeDiff > jumpRunnerTimeAllowance*2 {
+		// 시간 조작 의심
 		return model.JumpRunnerEndResponse{Valid: false, FinalScore: 0, CanSubmit: false}
 	}
 
-	// 검증 3: 점수 상한 체크 (60fps 기준, 프레임당 1점)
-	// score = frameCount, maxFrames = playTimeMs / 16.67
-	maxScore := int(float64(playTimeMs) / 16.67)
-	if maxScore > jumpRunnerMaxScore {
-		maxScore = jumpRunnerMaxScore
-	}
-
-	// 최종 점수 결정 (클라이언트 점수와 최대 가능 점수 중 작은 값)
-	finalScore := clientScore
-	if finalScore > maxScore {
-		finalScore = maxScore
+	// 서버에서 점수 계산 (클라이언트 점수 무시)
+	// 점수 = 실제 플레이 시간(ms) / 100 (100ms당 1점)
+	finalScore := int(actualPlayTime / 100)
+	if finalScore > jumpRunnerMaxScore {
+		finalScore = jumpRunnerMaxScore
 	}
 	if finalScore < 0 {
 		finalScore = 0

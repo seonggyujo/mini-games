@@ -144,13 +144,14 @@ type JumpRunnerEndResponse struct {
 
 // SnakeSession represents an active Snake game session
 type SnakeSession struct {
-	ID        string    `json:"id"`
-	Seed      int64     `json:"seed"`
-	Level     string    `json:"level"`
-	StartTime time.Time `json:"start_time"`
-	EatCount  int       `json:"eat_count"`
-	Score     int       `json:"score"`
-	Status    string    `json:"status"` // "playing", "ended", "submitted"
+	ID          string    `json:"id"`
+	Seed        int64     `json:"seed"`
+	Level       string    `json:"level"`
+	StartTime   time.Time `json:"start_time"`
+	LastEatTime time.Time `json:"last_eat_time"` // 마지막 음식 먹은 시간
+	EatCount    int       `json:"eat_count"`
+	Score       int       `json:"score"`
+	Status      string    `json:"status"` // "playing", "ended", "submitted"
 }
 
 // SnakeStartRequest is the request for Snake game start

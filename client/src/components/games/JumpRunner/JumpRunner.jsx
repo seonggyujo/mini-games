@@ -110,7 +110,7 @@ function JumpRunner() {
   };
 
   // End game - 서버에 결과 전송
-  const endGame = async (currentScore) => {
+  const endGame = async () => {
     if (!sessionId) return;
     
     const playTimeMs = Date.now() - gameStartTimeRef.current;
@@ -121,8 +121,8 @@ function JumpRunner() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
-          playTimeMs,
-          score: currentScore
+          playTimeMs
+          // score 파라미터 제거 - 서버에서 계산
         })
       });
       
@@ -130,9 +130,8 @@ function JumpRunner() {
         const data = await response.json();
         if (data.valid && data.canSubmit) {
           setFinalScore(data.finalScore);
-          if (checkAndUpdateHighScore(data.finalScore)) {
-            setShowNicknameModal(true);
-          }
+          checkAndUpdateHighScore(data.finalScore); // 로컬 최고점수 업데이트
+          setShowNicknameModal(true); // 항상 닉네임 입력 기회 제공
         }
       }
     } catch (err) {
@@ -252,7 +251,7 @@ function JumpRunner() {
       ) {
         // Collision detected
         setGameState('gameover');
-        endGame(Math.floor(scoreRef.current));
+        endGame();
         break;
       }
     }

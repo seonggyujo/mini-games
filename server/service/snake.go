@@ -78,9 +78,21 @@ func ProcessSnakeEat(sessionID string) model.SnakeEatResponse {
 		return model.SnakeEatResponse{Valid: false}
 	}
 
+	// 레벨별 설정 가져오기
+	config := snakeLevelConfig[session.Level]
+
+	// 최소 간격 검증: 레벨 속도 * 3칸 이동 시간 (최소 3칸은 이동해야 음식 도달)
+	minInterval := time.Duration(config.MinSpeed*3) * time.Millisecond
+	if !session.LastEatTime.IsZero() {
+		timeSinceLastEat := time.Since(session.LastEatTime)
+		if timeSinceLastEat < minInterval {
+			// 너무 빠른 eat 요청 - 스팸 의심
+			return model.SnakeEatResponse{Valid: false, EatCount: session.EatCount, Score: session.Score}
+		}
+	}
+
 	// 합리성 검증: 플레이 시간 대비 최대 먹기 횟수
 	playTimeMs := time.Since(session.StartTime).Milliseconds()
-	config := snakeLevelConfig[session.Level]
 
 	// 최소 이동 시간 기준 최대 먹기 횟수 계산
 	// 음식까지 평균 5칸 이동 가정
@@ -102,6 +114,7 @@ func ProcessSnakeEat(sessionID string) model.SnakeEatResponse {
 
 	session.EatCount++
 	session.Score = session.EatCount * snakePointsPerFood
+	session.LastEatTime = time.Now() // 마지막 먹은 시간 업데이트
 
 	return model.SnakeEatResponse{
 		Valid:    true,

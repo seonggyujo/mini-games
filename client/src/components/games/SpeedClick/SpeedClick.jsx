@@ -214,10 +214,11 @@ function SpeedClick() {
     prevBallEndTimeRef.current = 0;
   };
 
-  // 게임 오버 시 최고 점수 체크
+  // 게임 오버 시 닉네임 입력 모달 표시
   useEffect(() => {
-    if (gameState === 'gameover' && checkAndUpdateHighScore(score)) {
-      setShowNicknameModal(true);
+    if (gameState === 'gameover' && score > 0) {
+      checkAndUpdateHighScore(score); // 로컬 최고점수 업데이트
+      setShowNicknameModal(true); // 항상 닉네임 입력 기회 제공
     }
   }, [gameState, score, checkAndUpdateHighScore]);
 

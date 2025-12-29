@@ -138,8 +138,9 @@ function Snake() {
         const data = await response.json();
         if (data.valid) {
           setFinalScore(data.finalScore);
-          if (data.canSubmit && checkAndUpdateHighScore(data.finalScore)) {
-            setShowNicknameModal(true);
+          if (data.canSubmit) {
+            checkAndUpdateHighScore(data.finalScore); // 로컬 최고점수 업데이트
+            setShowNicknameModal(true); // 항상 닉네임 입력 기회 제공
           }
         }
       }

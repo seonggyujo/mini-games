@@ -177,7 +177,7 @@ func HandleJumpRunnerEnd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := service.EndJumpRunnerSession(req.SessionID, req.PlayTimeMs, req.Score)
+	response := service.EndJumpRunnerSession(req.SessionID, req.PlayTimeMs)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
