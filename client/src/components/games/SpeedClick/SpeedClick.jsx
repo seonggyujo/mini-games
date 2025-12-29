@@ -66,61 +66,19 @@ function SpeedClick() {
       size: ballInfo.size,
       index: ballInfo.index,
     });
-    
-    setNextBall(null); // 사용 후 클리어
   }, []);
 
-  // 공 타이머 (시간 감소)
+  // 서버에서 nextBall 받으면 300ms 후 공 생성
   useEffect(() => {
-    if (gameState !== 'playing' || !ball) return;
-
-    ballTimerRef.current = setInterval(() => {
-      setBall(prev => {
-        if (!prev) return null;
-        
-        const newTimeLeft = prev.timeLeft - 0.016;
-        
-        if (newTimeLeft <= 0) {
-          // 시간 초과 - 서버에 miss 보고
-          reportMiss(prev.index).then(response => {
-            if (response.valid) {
-              // 서버의 isRed 값을 신뢰
-              if (response.isRed) {
-                // 빨간 공을 놓침 - 목숨 감소
-                setLives(response.lives);
-                setClickEffect({ x: prev.x, y: prev.y, type: 'miss' });
-                setTimeout(() => setClickEffect(null), 300);
-              }
-              if (response.gameOver) {
-                setGameState('gameover');
-              } else if (response.nextBall) {
-                // 서버에서 받은 다음 공 정보 저장
-                setNextBall(response.nextBall);
-              }
-            }
-          }).catch(console.error);
-
-          // 다음 공 준비
-          ballIndexRef.current++;
-
-          return null;
-        }
-        
-        return { ...prev, timeLeft: newTimeLeft };
-      });
-    }, 16);
-
-    return () => clearInterval(ballTimerRef.current);
-  }, [gameState, ball, reportMiss]);
-
-  // 공이 없으면 새로 생성 (서버에서 받은 정보가 있을 때)
-  useEffect(() => {
-    if (gameState !== 'playing') return;
-    if (!ball && nextBall) {
-      const timeout = setTimeout(() => spawnBall(nextBall), 300);
-      return () => clearTimeout(timeout);
-    }
-  }, [gameState, ball, nextBall, spawnBall]);
+    if (gameState !== 'playing' || !nextBall) return;
+    
+    const timeout = setTimeout(() => {
+      spawnBall(nextBall);
+      setNextBall(null);
+    }, 300);
+    
+    return () => clearTimeout(timeout);
+  }, [gameState, nextBall, spawnBall]);
 
   // 공 클릭 처리
   const handleBallClick = async (e) => {
