@@ -20,14 +20,12 @@ function SpeedClick() {
 
   const ballTimerRef = useRef(null);
   const gameAreaRef = useRef(null);
-  const ballIndexRef = useRef(0);
+  const spawnTimeoutRef = useRef(null); // 공 생성 타이머
   const gameStartTimeRef = useRef(null);
-  const [nextBall, setNextBall] = useState(null); // 서버에서 받은 다음 공 정보
 
   // 서버 세션 훅
   const {
     sessionId,
-    seed,
     startSession,
     reportClick,
     reportMiss,
@@ -68,17 +66,18 @@ function SpeedClick() {
     });
   }, []);
 
-  // 서버에서 nextBall 받으면 300ms 후 공 생성
-  useEffect(() => {
-    if (gameState !== 'playing' || !nextBall) return;
+  // 300ms 후 공 생성 스케줄
+  const scheduleNextBall = useCallback((ballInfo) => {
+    // 기존 타이머 취소
+    if (spawnTimeoutRef.current) {
+      clearTimeout(spawnTimeoutRef.current);
+    }
     
-    const timeout = setTimeout(() => {
-      spawnBall(nextBall);
-      setNextBall(null);
+    spawnTimeoutRef.current = setTimeout(() => {
+      spawnBall(ballInfo);
+      spawnTimeoutRef.current = null;
     }, 300);
-    
-    return () => clearTimeout(timeout);
-  }, [gameState, nextBall, spawnBall]);
+  }, [spawnBall]);
 
   // 공 타이머 (시간 감소 + 시간 초과 처리)
   useEffect(() => {
@@ -102,7 +101,8 @@ function SpeedClick() {
               if (response.gameOver) {
                 setGameState('gameover');
               } else if (response.nextBall) {
-                setNextBall(response.nextBall);
+                // 다음 공 스케줄
+                scheduleNextBall(response.nextBall);
               }
             }
           }).catch(console.error);
@@ -115,7 +115,7 @@ function SpeedClick() {
     }, 16);
 
     return () => clearInterval(timer);
-  }, [gameState, ball, reportMiss]);
+  }, [gameState, ball, reportMiss, scheduleNextBall]);
 
   // 공 클릭 처리
   const handleBallClick = async (e) => {
@@ -144,16 +144,13 @@ function SpeedClick() {
         if (response.gameOver) {
           setGameState('gameover');
         } else if (response.nextBall) {
-          // 서버에서 받은 다음 공 정보 저장
-          setNextBall(response.nextBall);
+          // 다음 공 스케줄
+          scheduleNextBall(response.nextBall);
         }
       }
     } catch (err) {
       console.error('Click report failed:', err);
     }
-
-    // 다음 공 준비
-    ballIndexRef.current++;
 
     setTimeout(() => setClickEffect(null), 300);
   };
@@ -184,16 +181,15 @@ function SpeedClick() {
       // 서버 세션 시작 및 첫 번째 공 정보 받기
       const sessionData = await startSession();
       
-      // 첫 번째 공 정보 저장
-      setNextBall(sessionData.nextBall);
-      
       setGameState('playing');
       setScore(0);
       setLives(3);
       setCurrentLevel(1);
       setBall(null);
-      ballIndexRef.current = 0;
       gameStartTimeRef.current = Date.now();
+      
+      // 첫 번째 공 스케줄
+      scheduleNextBall(sessionData.nextBall);
     } catch (err) {
       console.error('Failed to start game:', err);
       alert('게임 시작에 실패했습니다. 다시 시도해주세요.');
@@ -202,15 +198,28 @@ function SpeedClick() {
 
   // 게임 리셋
   const resetGame = () => {
+    // 타이머 정리
+    if (spawnTimeoutRef.current) {
+      clearTimeout(spawnTimeoutRef.current);
+      spawnTimeoutRef.current = null;
+    }
+    
     resetSession();
     setGameState('ready');
     setScore(0);
     setLives(3);
     setCurrentLevel(1);
     setBall(null);
-    ballIndexRef.current = 0;
-    setNextBall(null);
   };
+
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (spawnTimeoutRef.current) {
+        clearTimeout(spawnTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // 게임 오버 시 닉네임 입력 모달 표시
   useEffect(() => {
