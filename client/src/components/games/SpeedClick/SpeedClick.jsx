@@ -22,7 +22,7 @@ function SpeedClick() {
   const gameAreaRef = useRef(null);
   const ballIndexRef = useRef(0);
   const gameStartTimeRef = useRef(null);
-  const nextBallRef = useRef(null); // 서버에서 받은 다음 공 정보
+  const [nextBall, setNextBall] = useState(null); // 서버에서 받은 다음 공 정보
 
   // 서버 세션 훅
   const {
@@ -54,8 +54,7 @@ function SpeedClick() {
   }, [score, currentLevel, getLevelConfig]);
 
   // 새 공 생성 (서버에서 받은 정보 사용)
-  const spawnBall = useCallback(() => {
-    const ballInfo = nextBallRef.current;
+  const spawnBall = useCallback((ballInfo) => {
     if (!ballInfo) return;
 
     setBall({
@@ -68,7 +67,7 @@ function SpeedClick() {
       index: ballInfo.index,
     });
     
-    nextBallRef.current = null; // 사용 후 클리어
+    setNextBall(null); // 사용 후 클리어
   }, []);
 
   // 공 타이머 (시간 감소)
@@ -96,7 +95,7 @@ function SpeedClick() {
                 setGameState('gameover');
               } else if (response.nextBall) {
                 // 서버에서 받은 다음 공 정보 저장
-                nextBallRef.current = response.nextBall;
+                setNextBall(response.nextBall);
               }
             }
           }).catch(console.error);
@@ -117,11 +116,11 @@ function SpeedClick() {
   // 공이 없으면 새로 생성 (서버에서 받은 정보가 있을 때)
   useEffect(() => {
     if (gameState !== 'playing') return;
-    if (!ball && nextBallRef.current) {
-      const timeout = setTimeout(spawnBall, 300);
+    if (!ball && nextBall) {
+      const timeout = setTimeout(() => spawnBall(nextBall), 300);
       return () => clearTimeout(timeout);
     }
-  }, [gameState, ball, spawnBall]);
+  }, [gameState, ball, nextBall, spawnBall]);
 
   // 공 클릭 처리
   const handleBallClick = async (e) => {
@@ -151,7 +150,7 @@ function SpeedClick() {
           setGameState('gameover');
         } else if (response.nextBall) {
           // 서버에서 받은 다음 공 정보 저장
-          nextBallRef.current = response.nextBall;
+          setNextBall(response.nextBall);
         }
       }
     } catch (err) {
@@ -191,7 +190,7 @@ function SpeedClick() {
       const sessionData = await startSession();
       
       // 첫 번째 공 정보 저장
-      nextBallRef.current = sessionData.nextBall;
+      setNextBall(sessionData.nextBall);
       
       setGameState('playing');
       setScore(0);
@@ -215,7 +214,7 @@ function SpeedClick() {
     setCurrentLevel(1);
     setBall(null);
     ballIndexRef.current = 0;
-    nextBallRef.current = null;
+    setNextBall(null);
   };
 
   // 게임 오버 시 닉네임 입력 모달 표시
