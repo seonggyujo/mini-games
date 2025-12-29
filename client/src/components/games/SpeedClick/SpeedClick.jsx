@@ -18,10 +18,9 @@ function SpeedClick() {
   const [highScore, , checkAndUpdateHighScore] = useHighScore('speedclick');
   const [clickEffect, setClickEffect] = useState(null);
 
-  const ballTimerRef = useRef(null);
   const gameAreaRef = useRef(null);
   const spawnTimeoutRef = useRef(null); // 공 생성 타이머
-  const gameStartTimeRef = useRef(null);
+  const timerRef = useRef(null); // 공 카운트다운 타이머
 
   // 서버 세션 훅
   const {
@@ -51,62 +50,81 @@ function SpeedClick() {
     }
   }, [score, currentLevel, getLevelConfig]);
 
-  // 새 공 생성 (서버에서 받은 정보 사용)
-  const spawnBall = useCallback((ballInfo) => {
-    if (!ballInfo) return;
-
-    setBall({
-      x: ballInfo.x,
-      y: ballInfo.y,
-      isRed: ballInfo.isRed,
-      timeLeft: ballInfo.duration / 1000,
-      maxTime: ballInfo.duration / 1000,
-      size: ballInfo.size,
-      index: ballInfo.index,
-    });
-  }, []);
-
-  // 300ms 후 공 생성 스케줄
+  // 다음 공 스케줄 (300ms 후 생성)
   const scheduleNextBall = useCallback((ballInfo) => {
+    console.log('[scheduleNextBall] called with:', ballInfo);
+    if (!ballInfo) {
+      console.log('[scheduleNextBall] ballInfo is null, returning');
+      return;
+    }
+    
     // 기존 타이머 취소
     if (spawnTimeoutRef.current) {
+      console.log('[scheduleNextBall] clearing existing timeout');
       clearTimeout(spawnTimeoutRef.current);
     }
     
+    console.log('[scheduleNextBall] scheduling new ball in 300ms');
     spawnTimeoutRef.current = setTimeout(() => {
-      spawnBall(ballInfo);
+      console.log('[scheduleNextBall] timeout fired, setting ball index:', ballInfo.index);
+      setBall({
+        x: ballInfo.x,
+        y: ballInfo.y,
+        isRed: ballInfo.isRed,
+        timeLeft: ballInfo.duration / 1000,
+        maxTime: ballInfo.duration / 1000,
+        size: ballInfo.size,
+        index: ballInfo.index,
+      });
       spawnTimeoutRef.current = null;
     }, 300);
-  }, [spawnBall]);
+  }, []);
 
-  // 공 타이머 (시간 감소 + 시간 초과 처리)
+  // miss 처리 함수 (ref에 저장하여 타이머에서 접근 가능하게)
+  const processMissRef = useRef(null);
+  
+  processMissRef.current = useCallback((missedBall) => {
+    console.log('[processMiss] processing missed ball index:', missedBall.index);
+    
+    reportMiss(missedBall.index).then(response => {
+      console.log('[processMiss] reportMiss response:', response);
+      if (response.valid) {
+        if (response.isRed) {
+          setLives(response.lives);
+          setClickEffect({ x: missedBall.x, y: missedBall.y, type: 'miss' });
+          setTimeout(() => setClickEffect(null), 300);
+        }
+        if (response.gameOver) {
+          console.log('[processMiss] game over');
+          setGameState('gameover');
+        } else if (response.nextBall) {
+          console.log('[processMiss] scheduling next ball');
+          scheduleNextBall(response.nextBall);
+        } else {
+          console.log('[processMiss] NO nextBall in response!');
+        }
+      }
+    }).catch(console.error);
+  }, [reportMiss, scheduleNextBall]);
+
+  // 공 타이머 - 시간 감소 및 만료 시 miss 처리 직접 호출
   useEffect(() => {
     if (gameState !== 'playing' || !ball) return;
 
-    const timer = setInterval(() => {
+    timerRef.current = setInterval(() => {
       setBall(prev => {
         if (!prev) return null;
         
-        const newTimeLeft = prev.timeLeft - 0.016; // 16ms마다 감소
+        const newTimeLeft = prev.timeLeft - 0.016;
         
         if (newTimeLeft <= 0) {
-          // 시간 초과 - 서버에 miss 보고
-          reportMiss(prev.index).then(response => {
-            if (response.valid) {
-              if (response.isRed) {
-                setLives(response.lives);
-                setClickEffect({ x: prev.x, y: prev.y, type: 'miss' });
-                setTimeout(() => setClickEffect(null), 300);
-              }
-              if (response.gameOver) {
-                setGameState('gameover');
-              } else if (response.nextBall) {
-                // 다음 공 스케줄
-                scheduleNextBall(response.nextBall);
-              }
+          // miss 처리 직접 호출 (다음 틱에서 실행하여 state 업데이트 완료 후)
+          const missedBall = prev;
+          setTimeout(() => {
+            if (processMissRef.current) {
+              processMissRef.current(missedBall);
             }
-          }).catch(console.error);
-          
+          }, 0);
           return null; // 공 제거
         }
         
@@ -114,8 +132,13 @@ function SpeedClick() {
       });
     }, 16);
 
-    return () => clearInterval(timer);
-  }, [gameState, ball, reportMiss, scheduleNextBall]);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [gameState, ball]);
 
   // 공 클릭 처리
   const handleBallClick = async (e) => {
@@ -123,30 +146,34 @@ function SpeedClick() {
     if (gameState !== 'playing' || !ball) return;
 
     const clickedBall = ball;
+    console.log('[handleBallClick] clicked ball index:', clickedBall.index);
     setBall(null); // 즉시 공 제거
     
     try {
-      // 서버에 클릭 보고
+      console.log('[handleBallClick] calling reportClick...');
       const response = await reportClick(clickedBall.index);
+      console.log('[handleBallClick] reportClick response:', response);
 
       if (response.valid) {
-        // 서버의 isRed 값을 신뢰
         if (response.isRed) {
-          // 빨간 공: 서버에서 받은 점수 사용
           setScore(response.score);
           setClickEffect({ x: clickedBall.x, y: clickedBall.y, type: 'success', points: response.points });
         } else {
-          // 파란 공: 목숨 감소
           setLives(response.lives);
           setClickEffect({ x: clickedBall.x, y: clickedBall.y, type: 'wrong' });
         }
 
         if (response.gameOver) {
+          console.log('[handleBallClick] game over');
           setGameState('gameover');
         } else if (response.nextBall) {
-          // 다음 공 스케줄
+          console.log('[handleBallClick] scheduling next ball');
           scheduleNextBall(response.nextBall);
+        } else {
+          console.log('[handleBallClick] NO nextBall in response!');
         }
+      } else {
+        console.log('[handleBallClick] response.valid is false');
       }
     } catch (err) {
       console.error('Click report failed:', err);
@@ -166,7 +193,7 @@ function SpeedClick() {
 
   // 대결 모드 시작
   const handleBattleMode = (e) => {
-    e.stopPropagation();  // 이벤트 버블링 방지
+    e.stopPropagation();
     setGameState('battle');
   };
 
@@ -178,17 +205,18 @@ function SpeedClick() {
   // 게임 시작
   const startGame = async () => {
     try {
-      // 서버 세션 시작 및 첫 번째 공 정보 받기
+      console.log('[startGame] starting...');
       const sessionData = await startSession();
+      console.log('[startGame] sessionData:', sessionData);
       
       setGameState('playing');
       setScore(0);
       setLives(3);
       setCurrentLevel(1);
       setBall(null);
-      gameStartTimeRef.current = Date.now();
       
       // 첫 번째 공 스케줄
+      console.log('[startGame] scheduling first ball');
       scheduleNextBall(sessionData.nextBall);
     } catch (err) {
       console.error('Failed to start game:', err);
@@ -203,6 +231,10 @@ function SpeedClick() {
       clearTimeout(spawnTimeoutRef.current);
       spawnTimeoutRef.current = null;
     }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     
     resetSession();
     setGameState('ready');
@@ -215,17 +247,16 @@ function SpeedClick() {
   // 컴포넌트 언마운트 시 타이머 정리
   useEffect(() => {
     return () => {
-      if (spawnTimeoutRef.current) {
-        clearTimeout(spawnTimeoutRef.current);
-      }
+      if (spawnTimeoutRef.current) clearTimeout(spawnTimeoutRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
   // 게임 오버 시 닉네임 입력 모달 표시
   useEffect(() => {
     if (gameState === 'gameover' && score > 0) {
-      checkAndUpdateHighScore(score); // 로컬 최고점수 업데이트
-      setShowNicknameModal(true); // 항상 닉네임 입력 기회 제공
+      checkAndUpdateHighScore(score);
+      setShowNicknameModal(true);
     }
   }, [gameState, score, checkAndUpdateHighScore]);
 
