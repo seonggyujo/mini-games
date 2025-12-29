@@ -170,7 +170,7 @@ func ProcessClick(sessionID string, ballIndex int, clickTimeMs int64) model.Clic
 
 	// 클릭 시간 검증 (네트워크 지연 허용)
 	ballEndTime := ball.SpawnTime + ball.Duration
-	
+
 	// 클릭이 너무 빠름 (공 생성 전)
 	if clickTimeMs < ball.SpawnTime-CLICK_TIME_TOLERANCE {
 		return model.ClickResponse{Valid: false, Message: "Click too early"}
@@ -224,6 +224,7 @@ func ProcessClick(sessionID string, ballIndex int, clickTimeMs int64) model.Clic
 
 	return model.ClickResponse{
 		Valid:    true,
+		IsRed:    ball.IsRed,
 		Points:   points,
 		Score:    session.Score,
 		Lives:    session.Lives,
@@ -268,6 +269,7 @@ func ProcessMiss(sessionID string, ballIndex int) model.MissResponse {
 
 	return model.MissResponse{
 		Valid:    true,
+		IsRed:    ball.IsRed,
 		Lives:    session.Lives,
 		GameOver: gameOver,
 	}

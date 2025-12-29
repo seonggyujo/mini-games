@@ -64,6 +64,7 @@ type ClickRequest struct {
 // ClickResponse is the response for a click
 type ClickResponse struct {
 	Valid    bool   `json:"valid"`
+	IsRed    bool   `json:"isRed"`
 	Points   int    `json:"points"`
 	Score    int    `json:"score"`
 	Lives    int    `json:"lives"`
@@ -80,6 +81,7 @@ type MissRequest struct {
 // MissResponse is the response for a miss
 type MissResponse struct {
 	Valid    bool `json:"valid"`
+	IsRed    bool `json:"isRed"`
 	Lives    int  `json:"lives"`
 	GameOver bool `json:"gameOver"`
 }

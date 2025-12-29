@@ -83,23 +83,20 @@ function SpeedClick() {
         
         if (newTimeLeft <= 0) {
           // 시간 초과 - 서버에 miss 보고
-          if (prev.isRed) {
-            // 빨간 공을 놓침
-            reportMiss(prev.index).then(response => {
-              if (response.valid) {
+          reportMiss(prev.index).then(response => {
+            if (response.valid) {
+              // 서버의 isRed 값을 신뢰
+              if (response.isRed) {
+                // 빨간 공을 놓침 - 목숨 감소
                 setLives(response.lives);
-                if (response.gameOver) {
-                  setGameState('gameover');
-                }
+                setClickEffect({ x: prev.x, y: prev.y, type: 'miss' });
+                setTimeout(() => setClickEffect(null), 300);
               }
-            }).catch(console.error);
-
-            setClickEffect({ x: prev.x, y: prev.y, type: 'miss' });
-            setTimeout(() => setClickEffect(null), 300);
-          } else {
-            // 파란 공을 놓침 - 서버에도 알림 (인덱스 동기화)
-            reportMiss(prev.index).catch(console.error);
-          }
+              if (response.gameOver) {
+                setGameState('gameover');
+              }
+            }
+          }).catch(console.error);
 
           // 다음 공 준비
           const currentBallEndTime = prevBallEndTimeRef.current + SPAWN_DELAY + prev.maxTime * 1000;
@@ -135,7 +132,8 @@ function SpeedClick() {
       const response = await reportClick(ball.index);
 
       if (response.valid) {
-        if (ball.isRed) {
+        // 서버의 isRed 값을 신뢰
+        if (response.isRed) {
           // 빨간 공: 서버에서 받은 점수 사용
           setScore(response.score);
           setClickEffect({ x: ball.x, y: ball.y, type: 'success', points: response.points });
