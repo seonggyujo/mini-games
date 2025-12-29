@@ -107,6 +107,7 @@ export function useSpeedClickSession() {
         sessionId: data.sessionId,
         seed: data.seed,
         startTime: data.startTime,
+        nextBall: data.nextBall, // 서버에서 받은 첫 번째 공 정보
       };
     } catch (err) {
       setError(err.message);

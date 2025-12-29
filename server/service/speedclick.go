@@ -99,8 +99,20 @@ func GenerateBall(seed int64, index int, score int, prevBallEndTime int64) model
 	}
 }
 
-// CreateSpeedClickSession creates a new game session
-func CreateSpeedClickSession() *model.GameSession {
+// toNextBallInfo converts SpeedClickBall to NextBallInfo for client
+func toNextBallInfo(ball model.SpeedClickBall) model.NextBallInfo {
+	return model.NextBallInfo{
+		Index:    ball.Index,
+		X:        ball.X,
+		Y:        ball.Y,
+		IsRed:    ball.IsRed,
+		Duration: ball.Duration,
+		Size:     ball.Size,
+	}
+}
+
+// CreateSpeedClickSession creates a new game session and returns first ball info
+func CreateSpeedClickSession() (*model.GameSession, model.NextBallInfo) {
 	sessionID := generateSessionID()
 	seed := time.Now().UnixNano()
 
@@ -129,7 +141,10 @@ func CreateSpeedClickSession() *model.GameSession {
 		sessionsMu.Unlock()
 	}()
 
-	return session
+	// 첫 번째 공 정보 생성
+	firstBall := GenerateBall(seed, 0, 0, 0)
+
+	return session, toNextBallInfo(firstBall)
 }
 
 // GetSession retrieves a session by ID
@@ -222,7 +237,7 @@ func ProcessClick(sessionID string, ballIndex int, clickTimeMs int64) model.Clic
 		session.Status = "ended"
 	}
 
-	return model.ClickResponse{
+	response := model.ClickResponse{
 		Valid:    true,
 		IsRed:    ball.IsRed,
 		Points:   points,
@@ -230,6 +245,15 @@ func ProcessClick(sessionID string, ballIndex int, clickTimeMs int64) model.Clic
 		Lives:    session.Lives,
 		GameOver: gameOver,
 	}
+
+	// 게임이 끝나지 않았으면 다음 공 정보 포함
+	if !gameOver {
+		nextBall := GenerateBall(session.Seed, session.CurrentBall, session.Score, session.BallSpawnTime)
+		nextBallInfo := toNextBallInfo(nextBall)
+		response.NextBall = &nextBallInfo
+	}
+
+	return response
 }
 
 // ProcessMiss handles a missed ball (time expired without click)
@@ -267,12 +291,21 @@ func ProcessMiss(sessionID string, ballIndex int) model.MissResponse {
 		session.Status = "ended"
 	}
 
-	return model.MissResponse{
+	response := model.MissResponse{
 		Valid:    true,
 		IsRed:    ball.IsRed,
 		Lives:    session.Lives,
 		GameOver: gameOver,
 	}
+
+	// 게임이 끝나지 않았으면 다음 공 정보 포함
+	if !gameOver {
+		nextBall := GenerateBall(session.Seed, session.CurrentBall, session.Score, session.BallSpawnTime)
+		nextBallInfo := toNextBallInfo(nextBall)
+		response.NextBall = &nextBallInfo
+	}
+
+	return response
 }
 
 // EndSpeedClickSession ends a game session

@@ -47,11 +47,22 @@ type SpeedClickLevel struct {
 	RequiredScore int
 }
 
+// NextBallInfo represents ball information sent to client
+type NextBallInfo struct {
+	Index    int     `json:"index"`
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
+	IsRed    bool    `json:"isRed"`
+	Duration int64   `json:"duration"` // ms
+	Size     int     `json:"size"`
+}
+
 // StartGameResponse is the response for game start
 type StartGameResponse struct {
-	SessionID string `json:"sessionId"`
-	Seed      int64  `json:"seed"`
-	StartTime int64  `json:"startTime"`
+	SessionID string       `json:"sessionId"`
+	Seed      int64        `json:"seed"`
+	StartTime int64        `json:"startTime"`
+	NextBall  NextBallInfo `json:"nextBall"`
 }
 
 // ClickRequest is the request for reporting a click
@@ -63,13 +74,14 @@ type ClickRequest struct {
 
 // ClickResponse is the response for a click
 type ClickResponse struct {
-	Valid    bool   `json:"valid"`
-	IsRed    bool   `json:"isRed"`
-	Points   int    `json:"points"`
-	Score    int    `json:"score"`
-	Lives    int    `json:"lives"`
-	GameOver bool   `json:"gameOver"`
-	Message  string `json:"message,omitempty"`
+	Valid    bool          `json:"valid"`
+	IsRed    bool          `json:"isRed"`
+	Points   int           `json:"points"`
+	Score    int           `json:"score"`
+	Lives    int           `json:"lives"`
+	GameOver bool          `json:"gameOver"`
+	NextBall *NextBallInfo `json:"nextBall,omitempty"`
+	Message  string        `json:"message,omitempty"`
 }
 
 // MissRequest is the request for reporting a missed ball
@@ -80,10 +92,11 @@ type MissRequest struct {
 
 // MissResponse is the response for a miss
 type MissResponse struct {
-	Valid    bool `json:"valid"`
-	IsRed    bool `json:"isRed"`
-	Lives    int  `json:"lives"`
-	GameOver bool `json:"gameOver"`
+	Valid    bool          `json:"valid"`
+	IsRed    bool          `json:"isRed"`
+	Lives    int           `json:"lives"`
+	GameOver bool          `json:"gameOver"`
+	NextBall *NextBallInfo `json:"nextBall,omitempty"`
 }
 
 // EndGameRequest is the request for ending a game

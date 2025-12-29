@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import NicknameModal from '../../common/NicknameModal';
 import useHighScore from '../../../hooks/useHighScore';
-import { useSpeedClickSession, generateBall, LEVELS } from '../../../hooks/useGameSession';
+import { useSpeedClickSession, LEVELS } from '../../../hooks/useGameSession';
 import BattleLobby from './BattleLobby';
 import './SpeedClick.css';
 
 const GAME_WIDTH = 1200;
 const GAME_HEIGHT = 800;
-const SPAWN_DELAY = 300;
 
 function SpeedClick() {
   const [gameState, setGameState] = useState('ready'); // ready, playing, gameover, battle
@@ -22,8 +21,8 @@ function SpeedClick() {
   const ballTimerRef = useRef(null);
   const gameAreaRef = useRef(null);
   const ballIndexRef = useRef(0);
-  const prevBallEndTimeRef = useRef(0);
   const gameStartTimeRef = useRef(null);
+  const nextBallRef = useRef(null); // 서버에서 받은 다음 공 정보
 
   // 서버 세션 훅
   const {
@@ -54,22 +53,23 @@ function SpeedClick() {
     }
   }, [score, currentLevel, getLevelConfig]);
 
-  // 새 공 생성 (시드 기반)
+  // 새 공 생성 (서버에서 받은 정보 사용)
   const spawnBall = useCallback(() => {
-    if (!seed) return;
+    const ballInfo = nextBallRef.current;
+    if (!ballInfo) return;
 
-    const newBall = generateBall(seed, ballIndexRef.current, score, prevBallEndTimeRef.current);
-    
     setBall({
-      x: newBall.x,
-      y: newBall.y,
-      isRed: newBall.isRed,
-      timeLeft: newBall.duration / 1000,
-      maxTime: newBall.duration / 1000,
-      size: newBall.size,
-      index: newBall.index,
+      x: ballInfo.x,
+      y: ballInfo.y,
+      isRed: ballInfo.isRed,
+      timeLeft: ballInfo.duration / 1000,
+      maxTime: ballInfo.duration / 1000,
+      size: ballInfo.size,
+      index: ballInfo.index,
     });
-  }, [seed, score]);
+    
+    nextBallRef.current = null; // 사용 후 클리어
+  }, []);
 
   // 공 타이머 (시간 감소)
   useEffect(() => {
@@ -94,13 +94,14 @@ function SpeedClick() {
               }
               if (response.gameOver) {
                 setGameState('gameover');
+              } else if (response.nextBall) {
+                // 서버에서 받은 다음 공 정보 저장
+                nextBallRef.current = response.nextBall;
               }
             }
           }).catch(console.error);
 
           // 다음 공 준비
-          const currentBallEndTime = prevBallEndTimeRef.current + SPAWN_DELAY + prev.maxTime * 1000;
-          prevBallEndTimeRef.current = currentBallEndTime;
           ballIndexRef.current++;
 
           return null;
@@ -113,38 +114,44 @@ function SpeedClick() {
     return () => clearInterval(ballTimerRef.current);
   }, [gameState, ball, reportMiss]);
 
-  // 공이 없으면 새로 생성
+  // 공이 없으면 새로 생성 (서버에서 받은 정보가 있을 때)
   useEffect(() => {
     if (gameState !== 'playing') return;
-    if (!ball && seed) {
+    if (!ball && nextBallRef.current) {
       const timeout = setTimeout(spawnBall, 300);
       return () => clearTimeout(timeout);
     }
-  }, [gameState, ball, seed, spawnBall]);
+  }, [gameState, ball, spawnBall]);
 
   // 공 클릭 처리
   const handleBallClick = async (e) => {
     e.stopPropagation();
     if (gameState !== 'playing' || !ball) return;
 
+    const clickedBall = ball;
+    setBall(null); // 즉시 공 제거
+    
     try {
       // 서버에 클릭 보고
-      const response = await reportClick(ball.index);
+      const response = await reportClick(clickedBall.index);
 
       if (response.valid) {
         // 서버의 isRed 값을 신뢰
         if (response.isRed) {
           // 빨간 공: 서버에서 받은 점수 사용
           setScore(response.score);
-          setClickEffect({ x: ball.x, y: ball.y, type: 'success', points: response.points });
+          setClickEffect({ x: clickedBall.x, y: clickedBall.y, type: 'success', points: response.points });
         } else {
           // 파란 공: 목숨 감소
           setLives(response.lives);
-          setClickEffect({ x: ball.x, y: ball.y, type: 'wrong' });
+          setClickEffect({ x: clickedBall.x, y: clickedBall.y, type: 'wrong' });
         }
 
         if (response.gameOver) {
           setGameState('gameover');
+        } else if (response.nextBall) {
+          // 서버에서 받은 다음 공 정보 저장
+          nextBallRef.current = response.nextBall;
         }
       }
     } catch (err) {
@@ -152,12 +159,9 @@ function SpeedClick() {
     }
 
     // 다음 공 준비
-    const currentBallEndTime = prevBallEndTimeRef.current + SPAWN_DELAY + ball.maxTime * 1000;
-    prevBallEndTimeRef.current = currentBallEndTime;
     ballIndexRef.current++;
 
     setTimeout(() => setClickEffect(null), 300);
-    setBall(null);
   };
 
   // 게임 영역 클릭 (공 외 영역)
@@ -183,8 +187,11 @@ function SpeedClick() {
   // 게임 시작
   const startGame = async () => {
     try {
-      // 서버 세션 시작
-      await startSession();
+      // 서버 세션 시작 및 첫 번째 공 정보 받기
+      const sessionData = await startSession();
+      
+      // 첫 번째 공 정보 저장
+      nextBallRef.current = sessionData.nextBall;
       
       setGameState('playing');
       setScore(0);
@@ -192,7 +199,6 @@ function SpeedClick() {
       setCurrentLevel(1);
       setBall(null);
       ballIndexRef.current = 0;
-      prevBallEndTimeRef.current = 0;
       gameStartTimeRef.current = Date.now();
     } catch (err) {
       console.error('Failed to start game:', err);
@@ -209,7 +215,7 @@ function SpeedClick() {
     setCurrentLevel(1);
     setBall(null);
     ballIndexRef.current = 0;
-    prevBallEndTimeRef.current = 0;
+    nextBallRef.current = null;
   };
 
   // 게임 오버 시 닉네임 입력 모달 표시

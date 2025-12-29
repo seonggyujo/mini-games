@@ -19,12 +19,13 @@ func HandleSpeedClickStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session := service.CreateSpeedClickSession()
+	session, firstBall := service.CreateSpeedClickSession()
 
 	response := model.StartGameResponse{
 		SessionID: session.ID,
 		Seed:      session.Seed,
 		StartTime: session.StartTime.UnixMilli(),
+		NextBall:  firstBall,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
