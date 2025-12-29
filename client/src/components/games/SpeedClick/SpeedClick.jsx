@@ -173,7 +173,12 @@ function SpeedClick() {
           console.log('[handleBallClick] NO nextBall in response!');
         }
       } else {
-        console.log('[handleBallClick] response.valid is false');
+        // valid: false여도 게임 계속 진행 - 서버에 현재 상태 재요청
+        console.log('[handleBallClick] response.valid is false, message:', response.message);
+        // 다음 공이 있으면 스케줄
+        if (response.nextBall) {
+          scheduleNextBall(response.nextBall);
+        }
       }
     } catch (err) {
       console.error('Click report failed:', err);

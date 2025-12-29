@@ -14,8 +14,8 @@ const (
 	GAME_HEIGHT = 800
 	SPAWN_DELAY = 300 // ms delay between balls
 
-	// 네트워크 지연 허용 범위 (ms)
-	CLICK_TIME_TOLERANCE = 200
+	// 네트워크 지연 허용 범위 (ms) - 클라이언트/서버 시간 차이 고려하여 넉넉하게
+	CLICK_TIME_TOLERANCE = 2000
 )
 
 // SpeedClick 레벨 설정 (클라이언트와 동일해야 함)
@@ -188,12 +188,29 @@ func ProcessClick(sessionID string, ballIndex int, clickTimeMs int64) model.Clic
 
 	// 클릭이 너무 빠름 (공 생성 전)
 	if clickTimeMs < ball.SpawnTime-CLICK_TIME_TOLERANCE {
-		return model.ClickResponse{Valid: false, Message: "Click too early"}
+		// 현재 공 정보를 다시 반환하여 클라이언트가 계속 진행 가능하도록
+		currentBallInfo := toNextBallInfo(ball)
+		return model.ClickResponse{Valid: false, Message: "Click too early", NextBall: &currentBallInfo}
 	}
 
-	// 클릭이 너무 늦음 (공 만료 후)
+	// 클릭이 너무 늦음 (공 만료 후) - miss로 처리하고 다음 공 반환
 	if clickTimeMs > ballEndTime+CLICK_TIME_TOLERANCE {
-		return model.ClickResponse{Valid: false, Message: "Click too late"}
+		// miss 처리: 빨간 공이면 목숨 감소
+		if ball.IsRed {
+			session.Lives--
+		}
+		session.CurrentBall++
+		session.BallSpawnTime = ballEndTime
+
+		gameOver := session.Lives <= 0
+		if gameOver {
+			session.Status = "ended"
+			return model.ClickResponse{Valid: false, Message: "Click too late", GameOver: true, Lives: session.Lives}
+		}
+
+		nextBall := GenerateBall(session.Seed, session.CurrentBall, session.Score, session.BallSpawnTime)
+		nextBallInfo := toNextBallInfo(nextBall)
+		return model.ClickResponse{Valid: false, Message: "Click too late", NextBall: &nextBallInfo, Lives: session.Lives}
 	}
 
 	// 점수 계산
