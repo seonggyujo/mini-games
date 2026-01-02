@@ -52,21 +52,16 @@ function SpeedClick() {
 
   // 다음 공 스케줄 (300ms 후 생성)
   const scheduleNextBall = useCallback((ballInfo) => {
-    console.log('[scheduleNextBall] called with:', ballInfo);
     if (!ballInfo) {
-      console.log('[scheduleNextBall] ballInfo is null, returning');
       return;
     }
     
     // 기존 타이머 취소
     if (spawnTimeoutRef.current) {
-      console.log('[scheduleNextBall] clearing existing timeout');
       clearTimeout(spawnTimeoutRef.current);
     }
     
-    console.log('[scheduleNextBall] scheduling new ball in 300ms');
     spawnTimeoutRef.current = setTimeout(() => {
-      console.log('[scheduleNextBall] timeout fired, setting ball index:', ballInfo.index);
       setBall({
         x: ballInfo.x,
         y: ballInfo.y,
@@ -84,10 +79,7 @@ function SpeedClick() {
   const processMissRef = useRef(null);
   
   processMissRef.current = useCallback((missedBall) => {
-    console.log('[processMiss] processing missed ball index:', missedBall.index);
-    
     reportMiss(missedBall.index).then(response => {
-      console.log('[processMiss] reportMiss response:', response);
       if (response.valid) {
         if (response.isRed) {
           setLives(response.lives);
@@ -95,16 +87,12 @@ function SpeedClick() {
           setTimeout(() => setClickEffect(null), 300);
         }
         if (response.gameOver) {
-          console.log('[processMiss] game over');
           setGameState('gameover');
         } else if (response.nextBall) {
-          console.log('[processMiss] scheduling next ball');
           scheduleNextBall(response.nextBall);
-        } else {
-          console.log('[processMiss] NO nextBall in response!');
         }
       }
-    }).catch(console.error);
+    }).catch(err => console.error('Miss report failed:', err));
   }, [reportMiss, scheduleNextBall]);
 
   // 공 타이머 - 시간 감소 및 만료 시 miss 처리 직접 호출
@@ -146,13 +134,10 @@ function SpeedClick() {
     if (gameState !== 'playing' || !ball) return;
 
     const clickedBall = ball;
-    console.log('[handleBallClick] clicked ball index:', clickedBall.index);
     setBall(null); // 즉시 공 제거
     
     try {
-      console.log('[handleBallClick] calling reportClick...');
       const response = await reportClick(clickedBall.index);
-      console.log('[handleBallClick] reportClick response:', response);
 
       if (response.valid) {
         if (response.isRed) {
@@ -164,18 +149,12 @@ function SpeedClick() {
         }
 
         if (response.gameOver) {
-          console.log('[handleBallClick] game over');
           setGameState('gameover');
         } else if (response.nextBall) {
-          console.log('[handleBallClick] scheduling next ball');
           scheduleNextBall(response.nextBall);
-        } else {
-          console.log('[handleBallClick] NO nextBall in response!');
         }
       } else {
         // valid: false여도 게임 계속 진행 - 서버에 현재 상태 재요청
-        console.log('[handleBallClick] response.valid is false, message:', response.message);
-        // 다음 공이 있으면 스케줄
         if (response.nextBall) {
           scheduleNextBall(response.nextBall);
         }
@@ -210,9 +189,7 @@ function SpeedClick() {
   // 게임 시작
   const startGame = async () => {
     try {
-      console.log('[startGame] starting...');
       const sessionData = await startSession();
-      console.log('[startGame] sessionData:', sessionData);
       
       setGameState('playing');
       setScore(0);
@@ -221,7 +198,6 @@ function SpeedClick() {
       setBall(null);
       
       // 첫 번째 공 스케줄
-      console.log('[startGame] scheduling first ball');
       scheduleNextBall(sessionData.nextBall);
     } catch (err) {
       console.error('Failed to start game:', err);
