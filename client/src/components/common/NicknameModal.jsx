@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import './NicknameModal.css';
 
+// Sanitize nickname input - remove potentially dangerous characters
+const sanitizeNickname = (value) => {
+  return value
+    .slice(0, 20)
+    .replace(/[<>"'&;]/g, '');
+};
+
 function NicknameModal({ score, gameName, sessionId, onSubmit, onClose, formatScore }) {
   const [nickname, setNickname] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,7 +68,7 @@ function NicknameModal({ score, gameName, sessionId, onSubmit, onClose, formatSc
           type="text"
           placeholder="닉네임 입력"
           value={nickname}
-          onChange={(e) => setNickname(e.target.value.slice(0, 20))}
+          onChange={(e) => setNickname(sanitizeNickname(e.target.value))}
           onKeyDown={handleKeyDown}
           disabled={isSubmitting}
           autoFocus

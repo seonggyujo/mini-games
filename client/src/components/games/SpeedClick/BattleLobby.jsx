@@ -3,6 +3,21 @@ import useWebSocket from '../../../hooks/useWebSocket';
 import SpeedClickBattle from './SpeedClickBattle';
 import './BattleLobby.css';
 
+// Sanitize nickname input - remove potentially dangerous characters
+const sanitizeNickname = (value) => {
+  return value
+    .slice(0, 10)
+    .replace(/[<>"'&;]/g, '');
+};
+
+// Sanitize room code - only allow alphanumeric characters
+const sanitizeRoomCode = (value) => {
+  return value
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 6);
+};
+
 // 승자 점수를 랭킹에 저장하는 함수
 const saveWinnerScore = async (nickname, score) => {
   try {
@@ -284,7 +299,7 @@ function BattleLobby({ onBack }) {
           <input
             type="text"
             value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
+            onChange={(e) => setNickname(sanitizeNickname(e.target.value))}
             placeholder="닉네임 입력 (최대 10자)"
             maxLength={10}
           />
@@ -303,7 +318,7 @@ function BattleLobby({ onBack }) {
           <input
             type="text"
             value={inputRoomCode}
-            onChange={(e) => setInputRoomCode(e.target.value.toUpperCase())}
+            onChange={(e) => setInputRoomCode(sanitizeRoomCode(e.target.value))}
             placeholder="6자리 코드 입력"
             maxLength={6}
           />
