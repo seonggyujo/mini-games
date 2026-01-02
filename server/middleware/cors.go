@@ -17,12 +17,26 @@ func init() {
 			allowedOrigins[i] = strings.TrimSpace(o)
 		}
 	} else {
+		// Production default only - set ALLOWED_ORIGINS env var for development
 		allowedOrigins = []string{
 			"https://mini-games.duckdns.org",
-			"http://localhost:3000",
-			"http://localhost:8080",
 		}
 	}
+}
+
+// GetAllowedOrigins returns the list of allowed origins for use by other packages
+func GetAllowedOrigins() []string {
+	return allowedOrigins
+}
+
+// IsOriginAllowed checks if the given origin is in the allowed list
+func IsOriginAllowed(origin string) bool {
+	for _, o := range allowedOrigins {
+		if strings.EqualFold(origin, o) {
+			return true
+		}
+	}
+	return false
 }
 
 func CORS(next http.Handler) http.Handler {
@@ -30,15 +44,7 @@ func CORS(next http.Handler) http.Handler {
 		origin := r.Header.Get("Origin")
 
 		// Check if origin is allowed
-		allowed := false
-		for _, o := range allowedOrigins {
-			if strings.EqualFold(origin, o) {
-				allowed = true
-				break
-			}
-		}
-
-		if allowed {
+		if IsOriginAllowed(origin) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 
