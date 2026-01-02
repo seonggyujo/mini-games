@@ -64,9 +64,10 @@ func main() {
 	// Apply middleware to API routes (order: Logging -> Security -> CORS -> RateLimit)
 	apiHandler := middleware.Logging(middleware.Security(middleware.CORS(middleware.RateLimit(mux))))
 
-	// Main router - WebSocket without middleware, API with middleware
+	// Main router - WebSocket with rate limiting, API with full middleware
 	mainMux := http.NewServeMux()
-	mainMux.HandleFunc("/ws/battle", handler.HandleBattleWS)
+	wsHandler := middleware.RateLimit(http.HandlerFunc(handler.HandleBattleWS))
+	mainMux.Handle("/ws/battle", wsHandler)
 	mainMux.Handle("/api/", apiHandler)
 
 	// Start server
