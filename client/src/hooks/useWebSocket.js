@@ -6,6 +6,22 @@ const getWebSocketURL = () => {
   return `${protocol}//${host}/ws/battle`;
 };
 
+// Valid message types from server
+const VALID_MESSAGE_TYPES = [
+  'room_created',
+  'opponent_joined',
+  'countdown',
+  'game_start',
+  'ball_spawn',
+  'ball_result',
+  'time_update',
+  'game_end',
+  'rematch_start',
+  'opponent_ready',
+  'opponent_left',
+  'error'
+];
+
 export default function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState(null);
@@ -22,12 +38,17 @@ export default function useWebSocket() {
 
     ws.onopen = () => {
       setIsConnected(true);
-      console.log('WebSocket connected');
     };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        
+        // Validate message type
+        if (!data.type || !VALID_MESSAGE_TYPES.includes(data.type)) {
+          return;
+        }
+        
         setLastMessage(data);
         
         // Call registered handlers for this message type
@@ -42,7 +63,6 @@ export default function useWebSocket() {
 
     ws.onclose = () => {
       setIsConnected(false);
-      console.log('WebSocket disconnected');
     };
 
     ws.onerror = (error) => {
@@ -67,8 +87,6 @@ export default function useWebSocket() {
   const sendMessage = useCallback((message) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message));
-    } else {
-      console.error('WebSocket is not connected');
     }
   }, []);
 
