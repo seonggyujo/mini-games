@@ -4,19 +4,35 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"regexp"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 
+	"mini-games/middleware"
 	"mini-games/model"
 	"mini-games/service"
 )
+
+// Connection limits per IP
+var (
+	connPerIP    = make(map[string]int)
+	connMu       sync.Mutex
+	maxConnPerIP = 5
+)
+
+// Nickname validation regex for WebSocket (alphanumeric, Korean, underscore, hyphen, space)
+var wsNicknameRegex = regexp.MustCompile(`^[a-zA-Z0-9가-힣_\-\s]+$`)
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all origins for development
+		origin := r.Header.Get("Origin")
+		// Use shared CORS origin validation
+		return middleware.IsOriginAllowed(origin)
 	},
 }
 
@@ -27,13 +43,45 @@ func InitWebSocket() {
 	roomManager = service.NewRoomManager()
 }
 
+// validateNickname checks if the nickname is valid
+func validateNickname(nickname string) bool {
+	trimmed := strings.TrimSpace(nickname)
+	if len(trimmed) == 0 || len(trimmed) > 20 {
+		return false
+	}
+	return wsNicknameRegex.MatchString(trimmed)
+}
+
 // HandleBattleWS handles WebSocket connections for battle mode
 func HandleBattleWS(w http.ResponseWriter, r *http.Request) {
+	// Get client IP for connection limiting
+	ip := middleware.GetClientIP(r)
+
+	// Check connection limit per IP
+	connMu.Lock()
+	if connPerIP[ip] >= maxConnPerIP {
+		connMu.Unlock()
+		http.Error(w, "Too many connections from this IP", http.StatusTooManyRequests)
+		return
+	}
+	connPerIP[ip]++
+	connMu.Unlock()
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade error: %v", err)
+		// Decrement connection count on upgrade failure
+		connMu.Lock()
+		connPerIP[ip]--
+		if connPerIP[ip] == 0 {
+			delete(connPerIP, ip)
+		}
+		connMu.Unlock()
 		return
 	}
+
+	// Set message size limit (4KB)
+	conn.SetReadLimit(4096)
 
 	player := &model.Player{
 		Conn:       conn,
@@ -48,6 +96,13 @@ func HandleBattleWS(w http.ResponseWriter, r *http.Request) {
 		if roomCode != "" {
 			roomManager.RemovePlayerFromRoom(roomCode, player.Index)
 		}
+		// Decrement connection count on disconnect
+		connMu.Lock()
+		connPerIP[ip]--
+		if connPerIP[ip] == 0 {
+			delete(connPerIP, ip)
+		}
+		connMu.Unlock()
 	}()
 
 	// Set read deadline for ping/pong
@@ -96,24 +151,24 @@ func HandleBattleWS(w http.ResponseWriter, r *http.Request) {
 
 		switch msg.Type {
 		case "create":
-			if msg.Nickname == "" {
-				player.SendJSON(model.ErrorMsg{Type: "error", Message: "닉네임을 입력해주세요"})
+			if !validateNickname(msg.Nickname) {
+				player.SendJSON(model.ErrorMsg{Type: "error", Message: "닉네임은 1-20자의 한글, 영문, 숫자만 가능합니다"})
 				continue
 			}
-			player.Nickname = msg.Nickname
+			player.Nickname = strings.TrimSpace(msg.Nickname)
 			room, roomCode = roomManager.CreateRoom(player)
 			player.SendJSON(model.RoomCreatedMsg{Type: "room_created", RoomCode: roomCode})
 
 		case "join":
-			if msg.Nickname == "" {
-				player.SendJSON(model.ErrorMsg{Type: "error", Message: "닉네임을 입력해주세요"})
+			if !validateNickname(msg.Nickname) {
+				player.SendJSON(model.ErrorMsg{Type: "error", Message: "닉네임은 1-20자의 한글, 영문, 숫자만 가능합니다"})
 				continue
 			}
 			if msg.RoomCode == "" {
 				player.SendJSON(model.ErrorMsg{Type: "error", Message: "방 코드를 입력해주세요"})
 				continue
 			}
-			player.Nickname = msg.Nickname
+			player.Nickname = strings.TrimSpace(msg.Nickname)
 			var err error
 			room, err = roomManager.JoinRoom(msg.RoomCode, player)
 			if err != nil {
