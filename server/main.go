@@ -61,8 +61,8 @@ func main() {
 	mux.HandleFunc("/api/game/memorycard/end", handler.HandleMemoryCardEnd)
 	mux.HandleFunc("/api/game/memorycard/submit", handler.HandleMemoryCardSubmit)
 
-	// Apply middleware to API routes (order: Logging -> CORS -> RateLimit)
-	apiHandler := middleware.Logging(middleware.CORS(middleware.RateLimit(mux)))
+	// Apply middleware to API routes (order: Logging -> Security -> CORS -> RateLimit)
+	apiHandler := middleware.Logging(middleware.Security(middleware.CORS(middleware.RateLimit(mux))))
 
 	// Main router - WebSocket without middleware, API with middleware
 	mainMux := http.NewServeMux()
