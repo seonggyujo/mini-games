@@ -3,43 +3,55 @@ package middleware
 import (
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
 
 var (
-	visitors = make(map[string]*visitor)
-	mu       sync.Mutex
+	visitors   = make(map[string]*visitor)
+	mu         sync.Mutex
+	trustProxy bool
 )
+
+func init() {
+	// Only trust proxy headers when explicitly configured
+	// Set TRUST_PROXY=true when behind a reverse proxy (nginx, etc.)
+	trustProxy = os.Getenv("TRUST_PROXY") == "true"
+}
 
 type visitor struct {
 	lastSeen time.Time
 	count    int
 }
 
-// getClientIP extracts the real client IP from the request
-func getClientIP(r *http.Request) string {
-	// Check X-Forwarded-For header first (for reverse proxies)
-	xff := r.Header.Get("X-Forwarded-For")
-	if xff != "" {
-		// X-Forwarded-For can be comma-separated, take the first IP
-		ips := net.ParseIP(xff)
-		if ips != nil {
-			return ips.String()
-		}
-		// If the header contains comma-separated values
-		for _, ip := range splitHeader(xff) {
-			if parsedIP := net.ParseIP(ip); parsedIP != nil {
-				return parsedIP.String()
+// GetClientIP extracts the real client IP from the request
+// Only trusts proxy headers (X-Forwarded-For, X-Real-IP) when TRUST_PROXY=true
+func GetClientIP(r *http.Request) string {
+	// Only check proxy headers if explicitly trusted
+	if trustProxy {
+		// Check X-Forwarded-For header first (for reverse proxies)
+		xff := r.Header.Get("X-Forwarded-For")
+		if xff != "" {
+			// X-Forwarded-For can be comma-separated, take the first IP
+			ips := net.ParseIP(xff)
+			if ips != nil {
+				return ips.String()
+			}
+			// If the header contains comma-separated values
+			for _, ip := range splitHeader(xff) {
+				if parsedIP := net.ParseIP(ip); parsedIP != nil {
+					return parsedIP.String()
+				}
 			}
 		}
-	}
 
-	// Check X-Real-IP header
-	xri := r.Header.Get("X-Real-IP")
-	if xri != "" {
-		if ip := net.ParseIP(xri); ip != nil {
-			return ip.String()
+		// Check X-Real-IP header
+		xri := r.Header.Get("X-Real-IP")
+		if xri != "" {
+			if ip := net.ParseIP(xri); ip != nil {
+				return ip.String()
+			}
 		}
 	}
 
@@ -95,7 +107,7 @@ func RateLimit(next http.Handler) http.Handler {
 	go cleanupVisitors()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := getClientIP(r)
+		ip := GetClientIP(r)
 
 		mu.Lock()
 		v, exists := visitors[ip]

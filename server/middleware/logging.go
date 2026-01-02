@@ -34,7 +34,7 @@ func Logging(next http.Handler) http.Handler {
 		// Log the request
 		log.Printf(
 			"%s %s %s %d %v",
-			getClientIP(r),
+			GetClientIP(r),
 			r.Method,
 			r.URL.Path,
 			wrapped.statusCode,
