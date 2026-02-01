@@ -49,12 +49,18 @@
 
 .timer.warning {
   color: #d63031;
-  animation: blink 0.5s infinite;
+  animation: timer-warning 0.5s infinite;
 }
 
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+@keyframes timer-warning {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.5; 
+    transform: scale(1.05);
+  }
 }
 
 .score-display {
@@ -175,13 +181,41 @@
 
 .translation-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   margin-top: 0.5rem;
+}
+
+.empty-warning {
+  font-size: 0.85rem;
+  color: #d63031;
+  animation: shake-text 0.3s ease-in-out;
+}
+
+@keyframes shake-text {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
 
 .char-count {
   font-size: 0.8rem;
   color: var(--text-muted);
+  margin-left: auto;
+}
+
+/* Textarea shake animation */
+.translation-box textarea.shake {
+  animation: shake 0.3s ease-in-out;
+  border-color: #d63031 !important;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-8px); }
+  80% { transform: translateX(8px); }
 }
 
 .btn-submit {
@@ -204,6 +238,13 @@
 .btn-submit.submitted {
   background: #00b894;
   cursor: default;
+  animation: submit-success 0.3s ease-out;
+}
+
+@keyframes submit-success {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .btn-submit:disabled {
@@ -275,6 +316,16 @@
   text-align: center;
   padding: 1rem;
   border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.score-diff {
+  font-size: 1rem;
+  opacity: 0.9;
 }
 
 .round-result-banner.me {
@@ -406,12 +457,37 @@
   border: 2px solid var(--primary-color);
 }
 
+.model-answer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
 .model-answer label {
-  display: block;
   font-size: 0.85rem;
   color: var(--primary-color);
-  margin-bottom: 0.5rem;
   font-weight: bold;
+}
+
+.btn-copy-answer {
+  padding: 0.35rem 0.75rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-copy-answer:hover {
+  background: #7c3aed;
+}
+
+.btn-copy-answer.copied {
+  background: #00b894;
 }
 
 .model-answer p {

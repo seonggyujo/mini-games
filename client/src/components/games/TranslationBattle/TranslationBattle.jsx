@@ -18,6 +18,8 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
   const [nextRoundReady, setNextRoundReady] = useState(false);
   const [opponentNextReady, setOpponentNextReady] = useState(false);
   const [finalResultData, setFinalResultData] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [showEmptyWarning, setShowEmptyWarning] = useState(false);
   const textareaRef = useRef(null);
   const lastTickRef = useRef(null);
   
@@ -105,10 +107,24 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
 
   const handleSubmit = useCallback(() => {
     if (submitted || phase !== 'playing') return;
+    
+    // 빈 번역 제출 방지 (시간 종료 시에는 허용)
+    if (!translation.trim() && timeLeft > 1) {
+      setShowEmptyWarning(true);
+      setTimeout(() => setShowEmptyWarning(false), 2000);
+      textareaRef.current?.focus();
+      return;
+    }
+    
     sendMessage({ type: 't_submit', translation: translation.trim() });
     setSubmitted(true);
     playClick();
-  }, [submitted, phase, translation, sendMessage, playClick]);
+    
+    // 진동 피드백 (지원하는 기기에서)
+    if (navigator.vibrate) {
+      navigator.vibrate(100);
+    }
+  }, [submitted, phase, translation, timeLeft, sendMessage, playClick]);
 
   const handleNextRound = useCallback(() => {
     if (nextRoundReady) return;
@@ -170,6 +186,32 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
     }
   };
 
+  // Copy model answer to clipboard
+  const handleCopyModelAnswer = useCallback(() => {
+    if (roundResult?.modelAnswer) {
+      navigator.clipboard.writeText(roundResult.modelAnswer).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = roundResult.modelAnswer;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  }, [roundResult]);
+
+  // Calculate score difference
+  const getScoreDiff = () => {
+    if (!roundResult) return 0;
+    return roundResult.myScore.total - roundResult.opponentScore.total;
+  };
+
   // Render result phase
   if (phase === 'result' && roundResult) {
     return (
@@ -198,6 +240,11 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
             {roundResult.roundWinner === 'me' && 'Round 승리!'}
             {roundResult.roundWinner === 'opponent' && 'Round 패배'}
             {roundResult.roundWinner === 'draw' && '무승부'}
+            {roundResult.roundWinner !== 'draw' && (
+              <span className="score-diff">
+                ({getScoreDiff() > 0 ? '+' : ''}{getScoreDiff()}점)
+              </span>
+            )}
           </div>
 
           <div className="original-sentence">
@@ -254,7 +301,16 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
           </div>
 
           <div className="model-answer">
-            <label>모범 답안</label>
+            <div className="model-answer-header">
+              <label>모범 답안</label>
+              <button 
+                className={`btn-copy-answer ${copied ? 'copied' : ''}`}
+                onClick={handleCopyModelAnswer}
+                title="클립보드에 복사"
+              >
+                {copied ? '복사됨!' : '복사'}
+              </button>
+            </div>
             <p>{roundResult.modelAnswer}</p>
           </div>
 
@@ -364,12 +420,19 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
           <textarea
             ref={textareaRef}
             value={translation}
-            onChange={(e) => setTranslation(e.target.value.slice(0, 500))}
+            onChange={(e) => {
+              setTranslation(e.target.value.slice(0, 500));
+              setShowEmptyWarning(false);
+            }}
             placeholder="영어로 번역하세요..."
             disabled={submitted}
             maxLength={500}
+            className={showEmptyWarning ? 'shake' : ''}
           />
           <div className="translation-footer">
+            {showEmptyWarning && (
+              <span className="empty-warning">번역을 입력해주세요!</span>
+            )}
             <span className="char-count">{translation.length}/500</span>
           </div>
         </div>
@@ -379,7 +442,7 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
           onClick={handleSubmit}
           disabled={submitted}
         >
-          {submitted ? '제출 완료' : '제출 (Ctrl+Enter)'}
+          {submitted ? '제출 완료!' : '제출 (Ctrl+Enter)'}
         </button>
 
         <div className="submit-status">
