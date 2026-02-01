@@ -46,9 +46,7 @@ function TranslationLobby({ onBack }) {
 
       onMessage('t_opponent_joined', (data) => {
         setOpponentNickname(data.nickname);
-        if (isHost) {
-          setLobbyState('ready');
-        }
+        setLobbyState('ready');  // Host/Guest 모두 ready 상태로 전환
       }),
 
       onMessage('t_game_start', (data) => {

@@ -36,7 +36,8 @@ const games = [
     title: 'Translation Battle',
     description: 'AI와 함께하는 영어 번역 대결!',
     icon: '🔤',
-    available: true
+    available: true,
+    noRanking: true  // 멀티플레이어 전용, 개인 랭킹 없음
   }
 ];
 
@@ -51,7 +52,7 @@ function HomePage() {
       try {
         const results = {};
         await Promise.all(
-          games.map(async (game) => {
+          games.filter(game => !game.noRanking).map(async (game) => {
             try {
               const response = await fetch(`/api/ranking?game=${game.id}&limit=3`);
               if (!response.ok) {
@@ -128,7 +129,7 @@ function HomePage() {
           </div>
         ) : (
           <div className="ranking-preview-grid">
-            {games.map(game => (
+            {games.filter(game => !game.noRanking).map(game => (
               <div key={game.id} className="ranking-preview-card">
                 <div className="ranking-preview-header">
                   <span className="preview-icon">{game.icon}</span>
