@@ -13,7 +13,7 @@ import (
 
 const (
 	GroqAPIURL   = "https://api.groq.com/openai/v1/chat/completions"
-	GroqModel    = "llama-3.1-70b-versatile"
+	GroqModel    = "llama-3.3-70b-versatile"
 	GroqTimeout  = 30 * time.Second
 )
 

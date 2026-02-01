@@ -21,6 +21,7 @@ const VALID_MESSAGE_TYPES = [
   't_opponent_ready',
   't_rematch_start',
   't_opponent_left',
+  't_opponent_next_ready',
   't_error'
 ];
 

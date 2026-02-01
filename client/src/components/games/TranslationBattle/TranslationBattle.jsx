@@ -13,6 +13,8 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
   const [opponentWins, setOpponentWins] = useState(0);
   const [roundResult, setRoundResult] = useState(null);
   const [isGameOver, setIsGameOver] = useState(false);
+  const [nextRoundReady, setNextRoundReady] = useState(false);
+  const [opponentNextReady, setOpponentNextReady] = useState(false);
   const textareaRef = useRef(null);
 
   // Setup message handlers
@@ -27,6 +29,8 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
         setSubmitted(false);
         setOpponentSubmitted(false);
         setRoundResult(null);
+        setNextRoundReady(false);
+        setOpponentNextReady(false);
         // Focus textarea
         setTimeout(() => {
           textareaRef.current?.focus();
@@ -51,6 +55,12 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
         setMyWins(data.totalWins[0]);
         setOpponentWins(data.totalWins[1]);
         setIsGameOver(data.isGameOver);
+        setNextRoundReady(false);
+        setOpponentNextReady(false);
+      }),
+
+      onMessage('t_opponent_next_ready', () => {
+        setOpponentNextReady(true);
       }),
 
       onMessage('t_game_over', () => {
@@ -69,6 +79,12 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
     sendMessage({ type: 't_submit', translation: translation.trim() });
     setSubmitted(true);
   }, [submitted, phase, translation, sendMessage]);
+
+  const handleNextRound = useCallback(() => {
+    if (nextRoundReady) return;
+    sendMessage({ type: 't_next_round' });
+    setNextRoundReady(true);
+  }, [nextRoundReady, sendMessage]);
 
   // Keyboard shortcut for submit (Ctrl+Enter)
   useEffect(() => {
@@ -179,7 +195,25 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
           </div>
 
           {!isGameOver && (
-            <p className="next-round-hint">다음 라운드가 곧 시작됩니다...</p>
+            <div className="next-round-section">
+              <button 
+                className={`btn-next-round ${nextRoundReady ? 'ready' : ''}`}
+                onClick={handleNextRound}
+                disabled={nextRoundReady}
+              >
+                {nextRoundReady ? '대기 중...' : '다음 라운드'}
+              </button>
+              
+              {opponentNextReady && !nextRoundReady && (
+                <p className="opponent-next-ready-text">상대가 준비됨!</p>
+              )}
+              {nextRoundReady && !opponentNextReady && (
+                <p className="waiting-next-text">상대를 기다리는 중...</p>
+              )}
+              {nextRoundReady && opponentNextReady && (
+                <p className="waiting-next-text">다음 라운드 시작 중...</p>
+              )}
+            </div>
           )}
         </div>
       </div>

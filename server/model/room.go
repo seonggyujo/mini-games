@@ -177,6 +177,7 @@ type TranslationRoom struct {
 	Wins         [2]int             `json:"wins"`         // Win count for each player
 	TotalScores  [2]int             `json:"totalScores"`  // Total scores across all rounds
 	RematchReady [2]bool            `json:"rematchReady"` // Whether each player is ready for rematch
+	NextRoundReady [2]bool          `json:"nextRoundReady"` // Whether each player is ready for next round
 
 	CreatedAt time.Time
 	Mu        sync.RWMutex
@@ -278,4 +279,9 @@ type TOpponentLeftMsg struct {
 type TErrorMsg struct {
 	Type    string `json:"type"` // "t_error"
 	Message string `json:"message"`
+}
+
+// TOpponentNextReadyMsg is sent when opponent is ready for next round
+type TOpponentNextReadyMsg struct {
+	Type string `json:"type"` // "t_opponent_next_ready"
 }

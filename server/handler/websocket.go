@@ -374,6 +374,12 @@ func HandleTranslationWS(w http.ResponseWriter, r *http.Request) {
 			}
 			translationRoomManager.HandleRematch(room, player.Index)
 
+		case "t_next_round":
+			if room == nil {
+				continue
+			}
+			translationRoomManager.HandleNextRound(room, player.Index)
+
 		case "t_leave":
 			if roomCode != "" {
 				translationRoomManager.RemovePlayer(roomCode, player.Index)

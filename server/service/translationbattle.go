@@ -398,20 +398,9 @@ func (rm *TranslationRoomManager) evaluateRound(room *model.TranslationRoom) {
 
 	if isGameOver {
 		rm.endGame(room)
-	} else {
-		// Wait 5 seconds then start next round
-		select {
-		case <-room.StopGame:
-			return
-		case <-time.After(5 * time.Second):
-		}
-
-		room.Mu.Lock()
-		room.CurrentRound++
-		room.Mu.Unlock()
-
-		rm.startRound(room)
 	}
+	// If not game over, wait for both players to click "next round" button
+	// HandleNextRound will be called when players send t_next_round message
 }
 
 // sendRoundResult sends round results to both players
@@ -564,6 +553,44 @@ func (rm *TranslationRoomManager) HandleRematch(room *model.TranslationRoom, pla
 		// Start new game with same difficulty
 		go rm.StartGame(room, room.Difficulty)
 	}
+}
+
+// HandleNextRound handles a player's next round ready signal
+func (rm *TranslationRoomManager) HandleNextRound(room *model.TranslationRoom, playerIndex int) {
+	room.Mu.Lock()
+	
+	// Only allow in result state (not game over)
+	if room.State != model.TStateResult {
+		room.Mu.Unlock()
+		return
+	}
+	
+	// Check if game is already over
+	isGameOver := room.Wins[0] >= TWinsNeeded || room.Wins[1] >= TWinsNeeded || room.CurrentRound >= TMaxRounds-1
+	if isGameOver {
+		room.Mu.Unlock()
+		return
+	}
+	
+	room.NextRoundReady[playerIndex] = true
+	
+	// Notify opponent
+	otherIndex := 1 - playerIndex
+	if room.Players[otherIndex] != nil {
+		room.Players[otherIndex].SendJSON(model.TOpponentNextReadyMsg{Type: "t_opponent_next_ready"})
+	}
+	
+	// Check if both are ready
+	if room.NextRoundReady[0] && room.NextRoundReady[1] {
+		room.NextRoundReady = [2]bool{false, false}
+		room.CurrentRound++
+		room.Mu.Unlock()
+		
+		rm.startRound(room)
+		return
+	}
+	
+	room.Mu.Unlock()
 }
 
 // cleanupRoutine periodically cleans up expired rooms
