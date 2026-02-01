@@ -202,7 +202,12 @@ function TranslationLobby({ onBack }) {
         initialSentence={initialSentence}
         sendMessage={sendMessage}
         onMessage={onMessage}
-        onFinished={() => setLobbyState('finished')}
+        onFinished={(finalResult) => {
+          if (finalResult) {
+            setGameData(prev => ({ ...prev, finalResult }));
+          }
+          setLobbyState('finished');
+        }}
       />
     );
   }

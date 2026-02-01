@@ -16,6 +16,7 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
   const [isGameOver, setIsGameOver] = useState(false);
   const [nextRoundReady, setNextRoundReady] = useState(false);
   const [opponentNextReady, setOpponentNextReady] = useState(false);
+  const [finalResultData, setFinalResultData] = useState(null);
   const textareaRef = useRef(null);
   const lastTickRef = useRef(null);
   
@@ -89,9 +90,9 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
         setOpponentNextReady(true);
       }),
 
-      onMessage('t_game_over', () => {
-        // "최종 결과 보기" 버튼 클릭 시 onFinished() 호출
-        // 여기서는 자동 전환하지 않음 - 사용자가 라운드 결과를 확인할 수 있도록
+      onMessage('t_game_over', (data) => {
+        // 최종 결과 데이터 저장 - "최종 결과 보기" 버튼 클릭 시 사용
+        setFinalResultData(data);
       }),
     ];
 
@@ -134,6 +135,13 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
       }
     }
   }, [timeLeft, phase, submitted, playTick]);
+
+  // 시간 종료 시 자동 제출
+  useEffect(() => {
+    if (timeLeft === 0 && !submitted && phase === 'playing') {
+      handleSubmit();
+    }
+  }, [timeLeft, submitted, phase, handleSubmit]);
 
   // Format time
   const formatTime = (seconds) => {
@@ -263,7 +271,7 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
             <div className="next-round-section">
               <button 
                 className="btn-final-result"
-                onClick={onFinished}
+                onClick={() => onFinished(finalResultData)}
               >
                 최종 결과 보기
               </button>
