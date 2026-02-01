@@ -25,22 +25,42 @@ const VALID_MESSAGE_TYPES = [
   't_error'
 ];
 
+// Connection states
+export const ConnectionState = {
+  DISCONNECTED: 'disconnected',
+  CONNECTING: 'connecting',
+  CONNECTED: 'connected',
+  RECONNECTING: 'reconnecting',
+};
+
+const MAX_RECONNECT_ATTEMPTS = 3;
+const RECONNECT_DELAY = 2000; // 2 seconds
+
 export default function useTranslationWS() {
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionState, setConnectionState] = useState(ConnectionState.DISCONNECTED);
   const [lastMessage, setLastMessage] = useState(null);
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+  const reconnectAttemptsRef = useRef(0);
   const messageHandlersRef = useRef(new Map());
+  const intentionalDisconnectRef = useRef(false);
+  const lastMessageRef = useRef(null); // 재연결 시 복원할 상태
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       return;
     }
 
+    intentionalDisconnectRef.current = false;
+    setConnectionState(ConnectionState.CONNECTING);
+
     const ws = new WebSocket(getWebSocketURL());
 
     ws.onopen = () => {
       setIsConnected(true);
+      setConnectionState(ConnectionState.CONNECTED);
+      reconnectAttemptsRef.current = 0; // 연결 성공 시 재연결 카운터 리셋
     };
 
     ws.onmessage = (event) => {
@@ -53,6 +73,7 @@ export default function useTranslationWS() {
         }
         
         setLastMessage(data);
+        lastMessageRef.current = data;
         
         // Call all registered handlers for this message type
         const handlers = messageHandlersRef.current.get(data.type);
@@ -64,8 +85,35 @@ export default function useTranslationWS() {
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       setIsConnected(false);
+      wsRef.current = null;
+      
+      // 의도적 연결 해제가 아니면 재연결 시도
+      if (!intentionalDisconnectRef.current) {
+        if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+          setConnectionState(ConnectionState.RECONNECTING);
+          reconnectAttemptsRef.current++;
+          
+          console.log(`WebSocket 재연결 시도 ${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS}`);
+          
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connect();
+          }, RECONNECT_DELAY);
+        } else {
+          setConnectionState(ConnectionState.DISCONNECTED);
+          // 재연결 실패 알림
+          const handlers = messageHandlersRef.current.get('t_error');
+          if (handlers) {
+            handlers.forEach(handler => handler({ 
+              type: 't_error', 
+              message: '서버 연결이 끊어졌습니다. 페이지를 새로고침해주세요.' 
+            }));
+          }
+        }
+      } else {
+        setConnectionState(ConnectionState.DISCONNECTED);
+      }
     };
 
     ws.onerror = (error) => {
@@ -76,6 +124,8 @@ export default function useTranslationWS() {
   }, []);
 
   const disconnect = useCallback(() => {
+    intentionalDisconnectRef.current = true;
+    
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
@@ -85,12 +135,16 @@ export default function useTranslationWS() {
       wsRef.current = null;
     }
     setIsConnected(false);
+    setConnectionState(ConnectionState.DISCONNECTED);
+    reconnectAttemptsRef.current = 0;
   }, []);
 
   const sendMessage = useCallback((message) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message));
+      return true;
     }
+    return false;
   }, []);
 
   const onMessage = useCallback((type, handler) => {
@@ -126,6 +180,7 @@ export default function useTranslationWS() {
 
   return {
     isConnected,
+    connectionState,
     lastMessage,
     connect,
     disconnect,

@@ -250,15 +250,24 @@ type TRoundResultMsg struct {
 	IsGameOver          bool             `json:"isGameOver"`
 }
 
+// RoundSummary represents a summary of a single round
+type RoundSummary struct {
+	Round         int    `json:"round"`
+	MyScore       int    `json:"myScore"`
+	OpponentScore int    `json:"opponentScore"`
+	Winner        string `json:"winner"` // "me", "opponent", "draw"
+}
+
 // TGameOverMsg is sent when the game ends
 type TGameOverMsg struct {
-	Type           string `json:"type"` // "t_game_over"
-	Winner         string `json:"winner"` // "me", "opponent", "draw"
-	MyWins         int    `json:"myWins"`
-	OpponentWins   int    `json:"opponentWins"`
-	MyTotalScore   int    `json:"myTotalScore"`
-	OpponentTotal  int    `json:"opponentTotal"`
-	WinnerNickname string `json:"winnerNickname,omitempty"`
+	Type           string         `json:"type"` // "t_game_over"
+	Winner         string         `json:"winner"` // "me", "opponent", "draw"
+	MyWins         int            `json:"myWins"`
+	OpponentWins   int            `json:"opponentWins"`
+	MyTotalScore   int            `json:"myTotalScore"`
+	OpponentTotal  int            `json:"opponentTotal"`
+	WinnerNickname string         `json:"winnerNickname,omitempty"`
+	RoundSummaries []RoundSummary `json:"roundSummaries"` // 각 라운드별 점수 요약
 }
 
 // TOpponentReadyMsg is sent when opponent is ready for rematch

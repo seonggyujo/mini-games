@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import useTranslationWS from '../../../hooks/useTranslationWS';
+import useTranslationWS, { ConnectionState } from '../../../hooks/useTranslationWS';
 import useSoundEffects from '../../../hooks/useSoundEffects';
 import TranslationBattle from './TranslationBattle';
 import './TranslationLobby.css';
@@ -36,7 +36,7 @@ function TranslationLobby({ onBack }) {
   const [isHost, setIsHost] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const { isConnected, connect, disconnect, sendMessage, onMessage } = useTranslationWS();
+  const { isConnected, connectionState, connect, disconnect, sendMessage, onMessage } = useTranslationWS();
   const { playBeep } = useSoundEffects();
 
   // Setup message handlers
@@ -225,6 +225,7 @@ function TranslationLobby({ onBack }) {
         initialTense={initialTense}
         sendMessage={sendMessage}
         onMessage={onMessage}
+        connectionState={connectionState}
         onFinished={(finalResult) => {
           if (finalResult) {
             setGameData(prev => ({ ...prev, finalResult }));
@@ -260,6 +261,37 @@ function TranslationLobby({ onBack }) {
               <span className="result-total">{finalResult.opponentTotal}점</span>
             </div>
           </div>
+
+          {/* 라운드별 결과 요약 */}
+          {finalResult.roundSummaries && finalResult.roundSummaries.length > 0 && (
+            <div className="round-summaries">
+              <h3>라운드별 결과</h3>
+              <table className="round-summary-table">
+                <thead>
+                  <tr>
+                    <th>라운드</th>
+                    <th>내 점수</th>
+                    <th>상대 점수</th>
+                    <th>결과</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {finalResult.roundSummaries.map((round, index) => (
+                    <tr key={index} className={`round-row ${round.winner}`}>
+                      <td>{round.round}</td>
+                      <td className={round.winner === 'me' ? 'highlight' : ''}>{round.myScore}</td>
+                      <td className={round.winner === 'opponent' ? 'highlight' : ''}>{round.opponentScore}</td>
+                      <td className="round-result">
+                        {round.winner === 'me' && '✓ 승'}
+                        {round.winner === 'opponent' && '✗ 패'}
+                        {round.winner === 'draw' && '- 무'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {finalResult.winnerNickname && (
             <p className="winner-text">{finalResult.winnerNickname} 승리!</p>

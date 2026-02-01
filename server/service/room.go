@@ -513,7 +513,8 @@ func (e RoomError) Error() string {
 }
 
 var (
-	ErrRoomNotFound    = RoomError{"방을 찾을 수 없습니다"}
-	ErrRoomFull        = RoomError{"방이 가득 찼습니다"}
+	ErrRoomNotFound     = RoomError{"방을 찾을 수 없습니다"}
+	ErrRoomFull         = RoomError{"방이 가득 찼습니다"}
 	ErrRoomNotAvailable = RoomError{"참가할 수 없는 방입니다"}
+	ErrNicknameDuplicate = RoomError{"이미 사용 중인 닉네임입니다"}
 )

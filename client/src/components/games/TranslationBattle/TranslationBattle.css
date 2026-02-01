@@ -675,3 +675,44 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4);
 }
+
+/* Connection Overlay */
+.connection-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.connection-content {
+  background: var(--card-bg);
+  padding: 2rem 3rem;
+  border-radius: 16px;
+  border: 2px solid var(--primary-color);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.connection-content p {
+  color: var(--text-color);
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.connection-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}

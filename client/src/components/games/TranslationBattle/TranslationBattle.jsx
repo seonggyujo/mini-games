@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import useSoundEffects from '../../../hooks/useSoundEffects';
+import { ConnectionState } from '../../../hooks/useTranslationWS';
 import './TranslationBattle.css';
 
-function TranslationBattle({ nickname, opponentNickname, difficulty, initialSentence, initialTense, sendMessage, onMessage, onFinished }) {
+function TranslationBattle({ nickname, opponentNickname, difficulty, initialSentence, initialTense, sendMessage, onMessage, connectionState, onFinished }) {
   const [phase, setPhase] = useState('playing'); // playing, evaluating, result
   const [round, setRound] = useState(1);
   const [sentence, setSentence] = useState(initialSentence || '');
@@ -384,6 +385,16 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
   // Render playing phase
   return (
     <div className="translation-battle">
+      {/* 연결 상태 오버레이 */}
+      {connectionState === ConnectionState.RECONNECTING && (
+        <div className="connection-overlay">
+          <div className="connection-content">
+            <div className="connection-spinner"></div>
+            <p>서버에 재연결 중...</p>
+          </div>
+        </div>
+      )}
+      
       <div className="battle-header">
         <div className="round-info">
           <span className="round-number">Round {round}/3</span>

@@ -98,6 +98,11 @@ func (rm *TranslationRoomManager) JoinRoom(code string, player *model.Player) (*
 		return nil, ErrRoomFull
 	}
 
+	// 닉네임 중복 체크
+	if room.Players[0] != nil && room.Players[0].Nickname == player.Nickname {
+		return nil, ErrNicknameDuplicate
+	}
+
 	player.Index = 1
 	player.Score = 0
 	player.Ready = false
@@ -473,6 +478,36 @@ func (rm *TranslationRoomManager) endGame(room *model.TranslationRoom) {
 	if room.Players[1] != nil {
 		nick1 = room.Players[1].Nickname
 	}
+
+	// 라운드별 점수 요약 생성
+	roundSummaries0 := make([]model.RoundSummary, len(room.Rounds))
+	roundSummaries1 := make([]model.RoundSummary, len(room.Rounds))
+	for i, round := range room.Rounds {
+		var winner0, winner1 string
+		if round.Winner == 0 {
+			winner0 = "me"
+			winner1 = "opponent"
+		} else if round.Winner == 1 {
+			winner0 = "opponent"
+			winner1 = "me"
+		} else {
+			winner0 = "draw"
+			winner1 = "draw"
+		}
+
+		roundSummaries0[i] = model.RoundSummary{
+			Round:         round.Number,
+			MyScore:       round.Scores[0].Total,
+			OpponentScore: round.Scores[1].Total,
+			Winner:        winner0,
+		}
+		roundSummaries1[i] = model.RoundSummary{
+			Round:         round.Number,
+			MyScore:       round.Scores[1].Total,
+			OpponentScore: round.Scores[0].Total,
+			Winner:        winner1,
+		}
+	}
 	room.Mu.Unlock()
 
 	// Determine winner
@@ -514,6 +549,7 @@ func (rm *TranslationRoomManager) endGame(room *model.TranslationRoom) {
 			MyTotalScore:   total0,
 			OpponentTotal:  total1,
 			WinnerNickname: winnerNickname,
+			RoundSummaries: roundSummaries0,
 		})
 	}
 
@@ -527,6 +563,7 @@ func (rm *TranslationRoomManager) endGame(room *model.TranslationRoom) {
 			MyTotalScore:   total1,
 			OpponentTotal:  total0,
 			WinnerNickname: winnerNickname,
+			RoundSummaries: roundSummaries1,
 		})
 	}
 	room.Mu.RUnlock()

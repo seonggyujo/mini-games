@@ -540,3 +540,81 @@
     min-width: auto;
   }
 }
+
+/* Round Summaries */
+.round-summaries {
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+.round-summaries h3 {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.round-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.round-summary-table th {
+  padding: 0.5rem;
+  color: var(--text-muted);
+  font-weight: normal;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.round-summary-table td {
+  padding: 0.6rem 0.5rem;
+  text-align: center;
+  color: var(--text-color);
+}
+
+.round-summary-table .round-row.me {
+  background: rgba(0, 184, 148, 0.1);
+}
+
+.round-summary-table .round-row.opponent {
+  background: rgba(214, 48, 49, 0.1);
+}
+
+.round-summary-table .round-row.draw {
+  background: rgba(253, 203, 110, 0.1);
+}
+
+.round-summary-table td.highlight {
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.round-summary-table .round-result {
+  font-size: 0.85rem;
+}
+
+.round-row.me .round-result {
+  color: #00b894;
+}
+
+.round-row.opponent .round-result {
+  color: #d63031;
+}
+
+.round-row.draw .round-result {
+  color: #fdcb6e;
+}
+
+/* Mobile responsive for round summaries */
+@media (max-width: 480px) {
+  .round-summary-table {
+    font-size: 0.8rem;
+  }
+  
+  .round-summary-table th,
+  .round-summary-table td {
+    padding: 0.4rem 0.25rem;
+  }
+}
