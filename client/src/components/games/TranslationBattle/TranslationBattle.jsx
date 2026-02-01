@@ -90,8 +90,8 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
       }),
 
       onMessage('t_game_over', () => {
-        // Will be handled by parent component
-        onFinished();
+        // "최종 결과 보기" 버튼 클릭 시 onFinished() 호출
+        // 여기서는 자동 전환하지 않음 - 사용자가 라운드 결과를 확인할 수 있도록
       }),
     ];
 
