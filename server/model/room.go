@@ -159,6 +159,123 @@ type ErrorMsg struct {
 }
 
 type TimeUpdateMsg struct {
-	Type        string  `json:"type"`
-	TimeLeft    float64 `json:"timeLeft"`
+	Type     string  `json:"type"`
+	TimeLeft float64 `json:"timeLeft"`
+}
+
+// ========== Translation Battle Room ==========
+
+// TranslationRoom represents a translation battle room
+type TranslationRoom struct {
+	Code       string                `json:"code"`
+	Players    [2]*Player            `json:"players"`
+	State      TranslationGameState  `json:"state"`
+	Difficulty TranslationDifficulty `json:"difficulty"`
+
+	Rounds       []TranslationRound `json:"rounds"`
+	CurrentRound int                `json:"currentRound"` // 0, 1, 2
+	Wins         [2]int             `json:"wins"`         // Win count for each player
+	TotalScores  [2]int             `json:"totalScores"`  // Total scores across all rounds
+	RematchReady [2]bool            `json:"rematchReady"` // Whether each player is ready for rematch
+
+	CreatedAt time.Time
+	Mu        sync.RWMutex
+	StopGame  chan struct{}
+}
+
+// ========== Translation Battle Messages (Server -> Client) ==========
+
+// TRoomCreatedMsg is sent when a room is created
+type TRoomCreatedMsg struct {
+	Type     string `json:"type"` // "t_room_created"
+	RoomCode string `json:"roomCode"`
+}
+
+// TOpponentJoinedMsg is sent when opponent joins
+type TOpponentJoinedMsg struct {
+	Type     string `json:"type"` // "t_opponent_joined"
+	Nickname string `json:"nickname"`
+}
+
+// TGameStartMsg is sent when game starts
+type TGameStartMsg struct {
+	Type       string `json:"type"` // "t_game_start"
+	Difficulty string `json:"difficulty"`
+}
+
+// TCountdownMsg is sent during countdown
+type TCountdownMsg struct {
+	Type  string `json:"type"` // "t_countdown"
+	Count int    `json:"count"`
+}
+
+// TRoundStartMsg is sent when a round starts
+type TRoundStartMsg struct {
+	Type     string `json:"type"` // "t_round_start"
+	Round    int    `json:"round"`
+	Sentence string `json:"sentence"`
+	TimeLeft int    `json:"timeLeft"` // seconds
+}
+
+// TTimeUpdateMsg is sent to update remaining time
+type TTimeUpdateMsg struct {
+	Type     string `json:"type"` // "t_time_update"
+	TimeLeft int    `json:"timeLeft"`
+}
+
+// TOpponentSubmittedMsg is sent when opponent submits
+type TOpponentSubmittedMsg struct {
+	Type string `json:"type"` // "t_opponent_submitted"
+}
+
+// TEvaluatingMsg is sent when AI is evaluating
+type TEvaluatingMsg struct {
+	Type string `json:"type"` // "t_evaluating"
+}
+
+// TRoundResultMsg is sent with round results
+type TRoundResultMsg struct {
+	Type                string           `json:"type"` // "t_round_result"
+	Round               int              `json:"round"`
+	Sentence            string           `json:"sentence"`
+	MyTranslation       string           `json:"myTranslation"`
+	OpponentTranslation string           `json:"opponentTranslation"`
+	MyScore             TranslationScore `json:"myScore"`
+	OpponentScore       TranslationScore `json:"opponentScore"`
+	ModelAnswer         string           `json:"modelAnswer"`
+	RoundWinner         string           `json:"roundWinner"` // "me", "opponent", "draw"
+	TotalWins           [2]int           `json:"totalWins"`
+	IsGameOver          bool             `json:"isGameOver"`
+}
+
+// TGameOverMsg is sent when the game ends
+type TGameOverMsg struct {
+	Type           string `json:"type"` // "t_game_over"
+	Winner         string `json:"winner"` // "me", "opponent", "draw"
+	MyWins         int    `json:"myWins"`
+	OpponentWins   int    `json:"opponentWins"`
+	MyTotalScore   int    `json:"myTotalScore"`
+	OpponentTotal  int    `json:"opponentTotal"`
+	WinnerNickname string `json:"winnerNickname,omitempty"`
+}
+
+// TOpponentReadyMsg is sent when opponent is ready for rematch
+type TOpponentReadyMsg struct {
+	Type string `json:"type"` // "t_opponent_ready"
+}
+
+// TRematchStartMsg is sent when rematch starts
+type TRematchStartMsg struct {
+	Type string `json:"type"` // "t_rematch_start"
+}
+
+// TOpponentLeftMsg is sent when opponent leaves
+type TOpponentLeftMsg struct {
+	Type string `json:"type"` // "t_opponent_left"
+}
+
+// TErrorMsg is sent on error
+type TErrorMsg struct {
+	Type    string `json:"type"` // "t_error"
+	Message string `json:"message"`
 }

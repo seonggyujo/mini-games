@@ -68,6 +68,8 @@ func main() {
 	mainMux := http.NewServeMux()
 	wsHandler := middleware.RateLimit(http.HandlerFunc(handler.HandleBattleWS))
 	mainMux.Handle("/ws/battle", wsHandler)
+	wsTranslationHandler := middleware.RateLimit(http.HandlerFunc(handler.HandleTranslationWS))
+	mainMux.Handle("/ws/translation", wsTranslationHandler)
 	mainMux.Handle("/api/", apiHandler)
 
 	// Start server

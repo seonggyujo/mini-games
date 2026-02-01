@@ -30,6 +30,13 @@ const games = [
     description: '카드를 뒤집어 같은 그림을 찾으세요!',
     icon: '🃏',
     available: true
+  },
+  {
+    id: 'translation-battle',
+    title: 'Translation Battle',
+    description: 'AI와 함께하는 영어 번역 대결!',
+    icon: '🔤',
+    available: true
   }
 ];
 

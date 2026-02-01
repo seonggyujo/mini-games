@@ -3,13 +3,15 @@ import JumpRunner from '../components/games/JumpRunner/JumpRunner';
 import SpeedClick from '../components/games/SpeedClick/SpeedClick';
 import Snake from '../components/games/Snake/Snake';
 import MemoryCard from '../components/games/MemoryCard/MemoryCard';
+import TranslationLobby from '../components/games/TranslationBattle/TranslationLobby';
 import './GamePage.css';
 
 const gameComponents = {
   'jump-runner': JumpRunner,
   'speed-click': SpeedClick,
   'snake': Snake,
-  'memory-card': MemoryCard
+  'memory-card': MemoryCard,
+  'translation-battle': TranslationLobby
 };
 
 function GamePage() {

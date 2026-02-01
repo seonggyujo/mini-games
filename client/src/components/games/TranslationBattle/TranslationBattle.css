@@ -1,0 +1,485 @@
+.translation-battle {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.battle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 2px solid var(--border-color);
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.round-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.round-number {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.9rem;
+  color: var(--primary-color);
+}
+
+.difficulty-label {
+  padding: 0.25rem 0.75rem;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid var(--primary-color);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: var(--primary-color);
+}
+
+.timer {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.5rem;
+  color: var(--text-color);
+  min-width: 80px;
+  text-align: center;
+}
+
+.timer.warning {
+  color: #d63031;
+  animation: blink 0.5s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.score-display {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.my-score {
+  color: #00b894;
+}
+
+.opponent-score {
+  color: #d63031;
+}
+
+.score-display .vs {
+  color: var(--text-muted);
+}
+
+/* Battle Content */
+.battle-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sentence-box {
+  background: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 2px solid var(--primary-color);
+}
+
+.sentence-box label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.korean-sentence {
+  font-size: 1.25rem;
+  color: var(--text-color);
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.translation-box {
+  background: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 2px solid var(--border-color);
+}
+
+.translation-box label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.translation-box textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 1rem;
+  line-height: 1.6;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.translation-box textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.translation-box textarea:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.translation-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.char-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.btn-submit {
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: #7c3aed;
+  transform: translateY(-2px);
+}
+
+.btn-submit.submitted {
+  background: #00b894;
+  cursor: default;
+}
+
+.btn-submit:disabled {
+  cursor: not-allowed;
+}
+
+.submit-status {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  font-size: 0.9rem;
+}
+
+.status-item {
+  color: var(--text-muted);
+}
+
+.status-item.submitted {
+  color: #00b894;
+}
+
+/* Evaluating Content */
+.evaluating-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 2px solid var(--primary-color);
+}
+
+.evaluating-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1.5rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.evaluating-content h3 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1rem;
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+}
+
+.evaluating-content p {
+  color: var(--text-muted);
+}
+
+/* Result Content */
+.result-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.round-result-banner {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.5rem;
+  text-align: center;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.round-result-banner.me {
+  background: rgba(0, 184, 148, 0.1);
+  color: #00b894;
+  border: 2px solid #00b894;
+}
+
+.round-result-banner.opponent {
+  background: rgba(214, 48, 49, 0.1);
+  color: #d63031;
+  border: 2px solid #d63031;
+}
+
+.round-result-banner.draw {
+  background: rgba(253, 203, 110, 0.1);
+  color: #fdcb6e;
+  border: 2px solid #fdcb6e;
+}
+
+.original-sentence {
+  background: var(--card-bg);
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 2px solid var(--border-color);
+}
+
+.original-sentence label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.original-sentence p {
+  font-size: 1.1rem;
+  color: var(--text-color);
+}
+
+.translations-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.translation-card {
+  background: var(--card-bg);
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 2px solid var(--border-color);
+}
+
+.translation-card.my-card {
+  border-color: #00b894;
+}
+
+.translation-card.opponent-card {
+  border-color: #d63031;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.player-name {
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.total-score {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1rem;
+  color: var(--primary-color);
+}
+
+.translation-text {
+  font-size: 0.95rem;
+  color: var(--text-color);
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  min-height: 50px;
+}
+
+.score-breakdown {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.score-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-color);
+  border-radius: 6px;
+  flex: 1;
+  min-width: 70px;
+}
+
+.score-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.score-value {
+  font-size: 0.9rem;
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.feedback {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.model-answer {
+  background: rgba(139, 92, 246, 0.1);
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 2px solid var(--primary-color);
+}
+
+.model-answer label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.model-answer p {
+  font-size: 1rem;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.next-round-hint {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  animation: pulse-text 1s infinite;
+}
+
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .translation-battle {
+    padding: 0.5rem;
+  }
+
+  .battle-header {
+    padding: 1rem;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .round-info {
+    order: 1;
+  }
+
+  .timer {
+    order: 2;
+    font-size: 2rem;
+  }
+
+  .score-display {
+    order: 3;
+  }
+
+  .translations-compare {
+    grid-template-columns: 1fr;
+  }
+
+  .korean-sentence {
+    font-size: 1.1rem;
+  }
+
+  .round-result-banner {
+    font-size: 1.2rem;
+  }
+
+  .score-breakdown {
+    justify-content: space-between;
+  }
+
+  .score-item {
+    min-width: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .battle-header {
+    padding: 0.75rem;
+  }
+
+  .round-number {
+    font-size: 0.8rem;
+  }
+
+  .timer {
+    font-size: 1.5rem;
+  }
+
+  .score-display {
+    font-size: 0.8rem;
+    gap: 0.5rem;
+  }
+
+  .sentence-box,
+  .translation-box,
+  .translation-card {
+    padding: 1rem;
+  }
+
+  .korean-sentence {
+    font-size: 1rem;
+  }
+
+  .translation-box textarea {
+    min-height: 100px;
+  }
+
+  .btn-submit {
+    padding: 0.875rem 1.5rem;
+  }
+}

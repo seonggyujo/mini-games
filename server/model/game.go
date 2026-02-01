@@ -262,3 +262,49 @@ type MemoryCardEndResponse struct {
 	FinalScore int  `json:"finalScore"`
 	CanSubmit  bool `json:"canSubmit"`
 }
+
+// ========== Translation Battle Models ==========
+
+// TranslationDifficulty represents the difficulty level
+type TranslationDifficulty string
+
+const (
+	DifficultyEasy   TranslationDifficulty = "easy"
+	DifficultyMedium TranslationDifficulty = "medium"
+	DifficultyHard   TranslationDifficulty = "hard"
+)
+
+// TranslationGameState represents the state of a translation battle game
+type TranslationGameState string
+
+const (
+	TStateWaiting    TranslationGameState = "waiting"    // Waiting for opponent
+	TStateReady      TranslationGameState = "ready"      // Both players joined, ready to start
+	TStateCountdown  TranslationGameState = "countdown"  // Countdown before round
+	TStatePlaying    TranslationGameState = "playing"    // Round in progress
+	TStateEvaluating TranslationGameState = "evaluating" // AI is evaluating
+	TStateResult     TranslationGameState = "result"     // Showing round result
+	TStateFinished   TranslationGameState = "finished"   // Game over
+)
+
+// TranslationScore represents the score breakdown for a translation
+type TranslationScore struct {
+	Meaning     int    `json:"meaning"`     // 0-40
+	Grammar     int    `json:"grammar"`     // 0-30
+	Naturalness int    `json:"naturalness"` // 0-30
+	Total       int    `json:"total"`       // 0-100
+	Feedback    string `json:"feedback"`    // AI feedback
+}
+
+// TranslationRound represents a single round in the game
+type TranslationRound struct {
+	Number       int                `json:"number"`       // 1, 2, 3
+	Sentence     string             `json:"sentence"`     // Korean sentence
+	Translations [2]string          `json:"translations"` // Player translations [player0, player1]
+	Submitted    [2]bool            `json:"submitted"`    // Whether each player has submitted
+	SubmitTimes  [2]time.Time       `json:"submitTimes"`  // When each player submitted
+	Scores       [2]TranslationScore `json:"scores"`       // Evaluation scores
+	ModelAnswer  string             `json:"modelAnswer"`  // Model answer from AI
+	Winner       int                `json:"winner"`       // -1: draw, 0: player0, 1: player1
+	StartTime    time.Time          `json:"startTime"`
+}
