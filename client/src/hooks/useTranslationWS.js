@@ -54,10 +54,10 @@ export default function useTranslationWS() {
         
         setLastMessage(data);
         
-        // Call registered handlers for this message type
-        const handler = messageHandlersRef.current.get(data.type);
-        if (handler) {
-          handler(data);
+        // Call all registered handlers for this message type
+        const handlers = messageHandlersRef.current.get(data.type);
+        if (handlers) {
+          handlers.forEach(handler => handler(data));
         }
       } catch (err) {
         console.error('Failed to parse WebSocket message:', err);
@@ -94,9 +94,26 @@ export default function useTranslationWS() {
   }, []);
 
   const onMessage = useCallback((type, handler) => {
-    messageHandlersRef.current.set(type, handler);
+    // 해당 타입의 핸들러 배열이 없으면 생성
+    if (!messageHandlersRef.current.has(type)) {
+      messageHandlersRef.current.set(type, []);
+    }
+    // 핸들러를 배열에 추가
+    messageHandlersRef.current.get(type).push(handler);
+    
+    // cleanup 함수: 해당 핸들러만 배열에서 제거
     return () => {
-      messageHandlersRef.current.delete(type);
+      const handlers = messageHandlersRef.current.get(type);
+      if (handlers) {
+        const index = handlers.indexOf(handler);
+        if (index > -1) {
+          handlers.splice(index, 1);
+        }
+        // 배열이 비었으면 Map에서 제거
+        if (handlers.length === 0) {
+          messageHandlersRef.current.delete(type);
+        }
+      }
     };
   }, []);
 
