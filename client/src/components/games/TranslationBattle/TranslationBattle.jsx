@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import './TranslationBattle.css';
 
-function TranslationBattle({ nickname, opponentNickname, difficulty, sendMessage, onMessage, onFinished }) {
+function TranslationBattle({ nickname, opponentNickname, difficulty, initialSentence, sendMessage, onMessage, onFinished }) {
   const [phase, setPhase] = useState('playing'); // playing, evaluating, result
   const [round, setRound] = useState(1);
-  const [sentence, setSentence] = useState('');
+  const [sentence, setSentence] = useState(initialSentence || '');
   const [translation, setTranslation] = useState('');
   const [timeLeft, setTimeLeft] = useState(60);
   const [submitted, setSubmitted] = useState(false);

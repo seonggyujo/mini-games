@@ -28,6 +28,7 @@ function TranslationLobby({ onBack }) {
   const [difficulty, setDifficulty] = useState('medium');
   const [error, setError] = useState('');
   const [gameData, setGameData] = useState(null);
+  const [initialSentence, setInitialSentence] = useState('');
   const [rematchRequested, setRematchRequested] = useState(false);
   const [opponentReady, setOpponentReady] = useState(false);
   const [isHost, setIsHost] = useState(false);
@@ -58,7 +59,8 @@ function TranslationLobby({ onBack }) {
         setCountdown(data.count);
       }),
 
-      onMessage('t_round_start', () => {
+      onMessage('t_round_start', (data) => {
+        setInitialSentence(data.sentence);
         setLobbyState('playing');
       }),
 
@@ -194,6 +196,7 @@ function TranslationLobby({ onBack }) {
         nickname={nickname}
         opponentNickname={opponentNickname}
         difficulty={difficulty}
+        initialSentence={initialSentence}
         sendMessage={sendMessage}
         onMessage={onMessage}
         onFinished={() => setLobbyState('finished')}
