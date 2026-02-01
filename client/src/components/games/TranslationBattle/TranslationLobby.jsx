@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import useTranslationWS from '../../../hooks/useTranslationWS';
+import useSoundEffects from '../../../hooks/useSoundEffects';
 import TranslationBattle from './TranslationBattle';
 import './TranslationLobby.css';
 
@@ -34,6 +35,7 @@ function TranslationLobby({ onBack }) {
   const [isHost, setIsHost] = useState(false);
 
   const { isConnected, connect, disconnect, sendMessage, onMessage } = useTranslationWS();
+  const { playBeep } = useSoundEffects();
 
   // Setup message handlers
   useEffect(() => {
@@ -57,6 +59,7 @@ function TranslationLobby({ onBack }) {
 
       onMessage('t_countdown', (data) => {
         setCountdown(data.count);
+        playBeep(data.count);
       }),
 
       onMessage('t_round_start', (data) => {
@@ -107,7 +110,7 @@ function TranslationLobby({ onBack }) {
     return () => {
       unsubscribers.forEach(unsub => unsub());
     };
-  }, [onMessage, isHost]);
+  }, [onMessage, isHost, playBeep]);
 
   const handleCreateRoom = useCallback(() => {
     if (!nickname.trim()) {

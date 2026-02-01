@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import useSoundEffects from '../../../hooks/useSoundEffects';
 import './TranslationBattle.css';
 
 function TranslationBattle({ nickname, opponentNickname, difficulty, initialSentence, sendMessage, onMessage, onFinished }) {
@@ -16,6 +17,19 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
   const [nextRoundReady, setNextRoundReady] = useState(false);
   const [opponentNextReady, setOpponentNextReady] = useState(false);
   const textareaRef = useRef(null);
+  const lastTickRef = useRef(null);
+  
+  const { 
+    isMuted, 
+    toggleMute, 
+    playClick, 
+    playAlert, 
+    playVictory, 
+    playDefeat, 
+    playCelebration, 
+    playTick,
+    playDraw 
+  } = useSoundEffects();
 
   // Setup message handlers
   useEffect(() => {
@@ -43,6 +57,7 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
 
       onMessage('t_opponent_submitted', () => {
         setOpponentSubmitted(true);
+        playAlert();
       }),
 
       onMessage('t_evaluating', () => {
@@ -57,6 +72,17 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
         setIsGameOver(data.isGameOver);
         setNextRoundReady(false);
         setOpponentNextReady(false);
+        
+        // 라운드 결과 효과음
+        if (data.isGameOver && data.roundWinner === 'me') {
+          playCelebration();
+        } else if (data.roundWinner === 'me') {
+          playVictory();
+        } else if (data.roundWinner === 'opponent') {
+          playDefeat();
+        } else {
+          playDraw();
+        }
       }),
 
       onMessage('t_opponent_next_ready', () => {
@@ -72,13 +98,14 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
     return () => {
       unsubscribers.forEach(unsub => unsub());
     };
-  }, [onMessage, onFinished]);
+  }, [onMessage, onFinished, playAlert, playVictory, playDefeat, playCelebration, playDraw]);
 
   const handleSubmit = useCallback(() => {
     if (submitted || phase !== 'playing') return;
     sendMessage({ type: 't_submit', translation: translation.trim() });
     setSubmitted(true);
-  }, [submitted, phase, translation, sendMessage]);
+    playClick();
+  }, [submitted, phase, translation, sendMessage, playClick]);
 
   const handleNextRound = useCallback(() => {
     if (nextRoundReady) return;
@@ -96,6 +123,17 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSubmit, submitted, phase]);
+
+  // Timer tick sound (10초 이하일 때)
+  useEffect(() => {
+    if (phase === 'playing' && timeLeft <= 10 && timeLeft > 0 && !submitted) {
+      // 같은 초에 중복 재생 방지
+      if (lastTickRef.current !== timeLeft) {
+        lastTickRef.current = timeLeft;
+        playTick();
+      }
+    }
+  }, [timeLeft, phase, submitted, playTick]);
 
   // Format time
   const formatTime = (seconds) => {
@@ -126,6 +164,13 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
             <span className="my-score">{nickname}: {myWins}승</span>
             <span className="vs">vs</span>
             <span className="opponent-score">{opponentNickname}: {opponentWins}승</span>
+            <button 
+              className={`mute-button ${isMuted ? 'muted' : ''}`} 
+              onClick={toggleMute}
+              title={isMuted ? '소리 켜기' : '소리 끄기'}
+            >
+              {isMuted ? '🔇' : '🔊'}
+            </button>
           </div>
         </div>
 
@@ -233,6 +278,13 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
             <span className="my-score">{nickname}: {myWins}승</span>
             <span className="vs">vs</span>
             <span className="opponent-score">{opponentNickname}: {opponentWins}승</span>
+            <button 
+              className={`mute-button ${isMuted ? 'muted' : ''}`} 
+              onClick={toggleMute}
+              title={isMuted ? '소리 켜기' : '소리 끄기'}
+            >
+              {isMuted ? '🔇' : '🔊'}
+            </button>
           </div>
         </div>
 
@@ -260,6 +312,13 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
           <span className="my-score">{nickname}: {myWins}승</span>
           <span className="vs">vs</span>
           <span className="opponent-score">{opponentNickname}: {opponentWins}승</span>
+          <button 
+            className={`mute-button ${isMuted ? 'muted' : ''}`} 
+            onClick={toggleMute}
+            title={isMuted ? '소리 켜기' : '소리 끄기'}
+          >
+            {isMuted ? '🔇' : '🔊'}
+          </button>
         </div>
       </div>
 
