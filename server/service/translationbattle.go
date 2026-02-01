@@ -171,14 +171,9 @@ func (rm *TranslationRoomManager) RemovePlayer(code string, playerIndex int) {
 
 // StartGame starts the translation battle game
 func (rm *TranslationRoomManager) StartGame(room *model.TranslationRoom, difficulty model.TranslationDifficulty) {
-	log.Printf("[StartGame] 시작, room=%s, State=%v", room.Code, room.State)
-	
-	log.Printf("[StartGame] Lock 시도...")
 	room.Mu.Lock()
-	log.Printf("[StartGame] Lock 획득 완료")
 	
 	if room.State != model.TStateReady || room.Players[0] == nil || room.Players[1] == nil {
-		log.Printf("[StartGame] 조건 불충족, 종료. State=%v, P0=%v, P1=%v", room.State, room.Players[0] != nil, room.Players[1] != nil)
 		room.Mu.Unlock()
 		return
 	}
@@ -190,7 +185,6 @@ func (rm *TranslationRoomManager) StartGame(room *model.TranslationRoom, difficu
 	room.Wins = [2]int{0, 0}
 	room.TotalScores = [2]int{0, 0}
 	room.Mu.Unlock()
-	log.Printf("[StartGame] Unlock 완료, 카운트다운 시작")
 
 	// Notify both players that game is starting
 	startMsg := model.TGameStartMsg{Type: "t_game_start", Difficulty: string(difficulty)}
@@ -199,42 +193,35 @@ func (rm *TranslationRoomManager) StartGame(room *model.TranslationRoom, difficu
 
 	// Countdown
 	for i := 3; i > 0; i-- {
-		log.Printf("[StartGame] 카운트다운: %d", i)
 		msg := model.TCountdownMsg{Type: "t_countdown", Count: i}
 		room.Players[0].SendJSON(msg)
 		room.Players[1].SendJSON(msg)
 
 		select {
 		case <-room.StopGame:
-			log.Printf("[StartGame] StopGame 신호 수신, 종료")
 			return
 		case <-time.After(1 * time.Second):
 		}
 	}
 
-	log.Printf("[StartGame] 카운트다운 완료, startRound 호출")
 	// Start first round
 	rm.startRound(room)
 }
 
 // startRound starts a new round
 func (rm *TranslationRoomManager) startRound(room *model.TranslationRoom) {
-	log.Printf("[startRound] 시작, room=%s, Lock 시도...", room.Code)
 	room.Mu.Lock()
-	log.Printf("[startRound] Lock 획득 완료")
 
 	// Generate sentence using AI
-	log.Printf("[startRound] Groq API 호출 시작...")
-	sentence, err := rm.groqClient.GenerateSentence(string(room.Difficulty))
+	sentenceResult, err := rm.groqClient.GenerateSentenceWithTense(string(room.Difficulty))
 	if err != nil {
-		log.Printf("[startRound] Groq API 에러: %v", err)
-	} else {
-		log.Printf("[startRound] Groq API 완료, sentence=%s", sentence)
+		log.Printf("[startRound] Groq API error: %v", err)
 	}
 
 	round := model.TranslationRound{
 		Number:      room.CurrentRound + 1,
-		Sentence:    sentence,
+		Sentence:    sentenceResult.Sentence,
+		Tense:       sentenceResult.Tense,
 		Submitted:   [2]bool{false, false},
 		Winner:      -1,
 		StartTime:   time.Now(),
@@ -243,26 +230,24 @@ func (rm *TranslationRoomManager) startRound(room *model.TranslationRoom) {
 	room.Rounds = append(room.Rounds, round)
 	room.State = model.TStatePlaying
 	room.Mu.Unlock()
-	log.Printf("[startRound] Unlock 완료, 플레이어에게 전송")
 
 	// Notify both players
 	roundMsg := model.TRoundStartMsg{
 		Type:     "t_round_start",
 		Round:    round.Number,
-		Sentence: sentence,
+		Sentence: sentenceResult.Sentence,
+		Tense:    sentenceResult.Tense,
 		TimeLeft: int(TRoundDuration.Seconds()),
 	}
 	room.Players[0].SendJSON(roundMsg)
 	room.Players[1].SendJSON(roundMsg)
 
 	// Start round timer
-	log.Printf("[startRound] roundTimer 시작, roundIndex=%d", room.CurrentRound)
 	go rm.roundTimer(room, room.CurrentRound)
 }
 
 // roundTimer handles the countdown for a round
 func (rm *TranslationRoomManager) roundTimer(room *model.TranslationRoom, roundIndex int) {
-	log.Printf("[roundTimer] 시작, room=%s, roundIndex=%d", room.Code, roundIndex)
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
@@ -272,14 +257,12 @@ func (rm *TranslationRoomManager) roundTimer(room *model.TranslationRoom, roundI
 	for {
 		select {
 		case <-room.StopGame:
-			log.Printf("[roundTimer] StopGame 신호 수신, 종료. roundIndex=%d", roundIndex)
 			return
 
 		case <-ticker.C:
 			room.Mu.RLock()
 			// Check if this round is still active
 			if room.CurrentRound != roundIndex || room.State != model.TStatePlaying {
-				log.Printf("[roundTimer] 라운드 비활성, 종료. roundIndex=%d, CurrentRound=%d, State=%v", roundIndex, room.CurrentRound, room.State)
 				room.Mu.RUnlock()
 				return
 			}
@@ -290,7 +273,6 @@ func (rm *TranslationRoomManager) roundTimer(room *model.TranslationRoom, roundI
 			room.Mu.RUnlock()
 
 			if bothSubmitted {
-				log.Printf("[roundTimer] 양측 제출 완료, 평가 시작. roundIndex=%d", roundIndex)
 				rm.evaluateRound(room)
 				return
 			}
@@ -300,7 +282,6 @@ func (rm *TranslationRoomManager) roundTimer(room *model.TranslationRoom, roundI
 			timeLeft := int((duration - elapsed).Seconds())
 
 			if timeLeft <= 0 {
-				log.Printf("[roundTimer] 시간 종료, 평가 시작. roundIndex=%d", roundIndex)
 				// Time's up - evaluate round
 				rm.evaluateRound(room)
 				return
@@ -476,7 +457,6 @@ func (rm *TranslationRoomManager) sendRoundResult(room *model.TranslationRoom, r
 
 // endGame ends the game and sends final results
 func (rm *TranslationRoomManager) endGame(room *model.TranslationRoom) {
-	log.Printf("[endGame] 시작, room=%s", room.Code)
 	room.Mu.Lock()
 	room.State = model.TStateFinished
 	room.RematchReady = [2]bool{false, false}
@@ -554,17 +534,14 @@ func (rm *TranslationRoomManager) endGame(room *model.TranslationRoom) {
 
 // HandleRematch handles a rematch request
 func (rm *TranslationRoomManager) HandleRematch(room *model.TranslationRoom, playerIndex int) {
-	log.Printf("[HandleRematch] 시작, room=%s, playerIndex=%d", room.Code, playerIndex)
 	room.Mu.Lock()
 
 	if room.State != model.TStateFinished {
-		log.Printf("[HandleRematch] State가 Finished가 아님, State=%v", room.State)
 		room.Mu.Unlock()
 		return
 	}
 
 	room.RematchReady[playerIndex] = true
-	log.Printf("[HandleRematch] RematchReady 설정, [0]=%v, [1]=%v", room.RematchReady[0], room.RematchReady[1])
 
 	// Notify other player
 	otherIndex := 1 - playerIndex
@@ -574,25 +551,22 @@ func (rm *TranslationRoomManager) HandleRematch(room *model.TranslationRoom, pla
 
 	// Check if both are ready
 	if room.RematchReady[0] && room.RematchReady[1] {
-		log.Printf("[HandleRematch] 양측 준비 완료, StartGame 준비")
 		room.State = model.TStateReady
 		room.StopGame = make(chan struct{})
 		room.RematchReady = [2]bool{false, false}
-		difficulty := room.Difficulty // Lock 해제 전에 값 복사
+		difficulty := room.Difficulty // Copy value before releasing lock
 
 		// Send rematch start
 		room.Players[0].SendJSON(model.TRematchStartMsg{Type: "t_rematch_start"})
 		room.Players[1].SendJSON(model.TRematchStartMsg{Type: "t_rematch_start"})
 
-		// Lock 해제 후 StartGame 호출 (데드락 방지)
+		// Release lock before calling StartGame (avoid deadlock)
 		room.Mu.Unlock()
-		log.Printf("[HandleRematch] Unlock 완료, StartGame goroutine 시작")
 		go rm.StartGame(room, difficulty)
 		return
 	}
 
 	room.Mu.Unlock()
-	log.Printf("[HandleRematch] 상대 대기 중")
 }
 
 // HandleNextRound handles a player's next round ready signal

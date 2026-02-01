@@ -2,10 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import useSoundEffects from '../../../hooks/useSoundEffects';
 import './TranslationBattle.css';
 
-function TranslationBattle({ nickname, opponentNickname, difficulty, initialSentence, sendMessage, onMessage, onFinished }) {
+function TranslationBattle({ nickname, opponentNickname, difficulty, initialSentence, initialTense, sendMessage, onMessage, onFinished }) {
   const [phase, setPhase] = useState('playing'); // playing, evaluating, result
   const [round, setRound] = useState(1);
   const [sentence, setSentence] = useState(initialSentence || '');
+  const [tense, setTense] = useState(initialTense || '현재형');
   const [translation, setTranslation] = useState('');
   const [timeLeft, setTimeLeft] = useState(60);
   const [submitted, setSubmitted] = useState(false);
@@ -39,6 +40,7 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
         setPhase('playing');
         setRound(data.round);
         setSentence(data.sentence);
+        setTense(data.tense || '현재형');
         setTimeLeft(data.timeLeft);
         setTranslation('');
         setSubmitted(false);
@@ -156,6 +158,15 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
       case 'easy': return '쉬움';
       case 'hard': return '어려움';
       default: return '보통';
+    }
+  };
+
+  // Get tense badge class
+  const getTenseBadgeClass = (tenseValue) => {
+    switch (tenseValue) {
+      case '과거형': return 'tense-past';
+      case '미래형': return 'tense-future';
+      default: return 'tense-present';
     }
   };
 
@@ -341,7 +352,10 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
 
       <div className="battle-content">
         <div className="sentence-box">
-          <label>한국어 문장</label>
+          <div className="sentence-header">
+            <label>한국어 문장</label>
+            <span className={`tense-badge ${getTenseBadgeClass(tense)}`}>{tense}</span>
+          </div>
           <p className="korean-sentence">{sentence}</p>
         </div>
 

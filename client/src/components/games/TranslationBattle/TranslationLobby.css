@@ -226,6 +226,12 @@
   color: var(--text-muted);
 }
 
+.code-with-copy {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .room-code-display .code {
   font-family: 'Press Start 2P', cursive;
   font-size: 2rem;
@@ -235,6 +241,28 @@
   padding: 1rem 1.5rem;
   border-radius: 8px;
   border: 2px dashed var(--primary-color);
+}
+
+.btn-copy {
+  padding: 0.5rem 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-copy:hover {
+  background: #7c3aed;
+  transform: translateY(-1px);
+}
+
+.btn-copy.copied {
+  background: #00b894;
 }
 
 .waiting-screen .hint {
@@ -461,6 +489,15 @@
     font-size: 1.5rem;
     letter-spacing: 0.3rem;
     padding: 0.75rem 1rem;
+  }
+
+  .code-with-copy {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .btn-copy {
+    width: 100%;
   }
 
   .countdown-number {

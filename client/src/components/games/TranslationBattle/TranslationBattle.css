@@ -90,11 +90,42 @@
   border: 2px solid var(--primary-color);
 }
 
+.sentence-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
 .sentence-box label {
-  display: block;
   font-size: 0.9rem;
   color: var(--text-muted);
-  margin-bottom: 0.75rem;
+}
+
+/* Tense Badge */
+.tense-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.tense-badge.tense-present {
+  background: rgba(0, 184, 148, 0.15);
+  color: #00b894;
+  border: 1px solid #00b894;
+}
+
+.tense-badge.tense-past {
+  background: rgba(116, 185, 255, 0.15);
+  color: #74b9ff;
+  border: 1px solid #74b9ff;
+}
+
+.tense-badge.tense-future {
+  background: rgba(253, 203, 110, 0.15);
+  color: #fdcb6e;
+  border: 1px solid #fdcb6e;
 }
 
 .korean-sentence {

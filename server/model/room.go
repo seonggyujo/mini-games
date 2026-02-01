@@ -215,6 +215,7 @@ type TRoundStartMsg struct {
 	Type     string `json:"type"` // "t_round_start"
 	Round    int    `json:"round"`
 	Sentence string `json:"sentence"`
+	Tense    string `json:"tense"`    // 시제: "현재형", "과거형", "미래형"
 	TimeLeft int    `json:"timeLeft"` // seconds
 }
 

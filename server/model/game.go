@@ -300,6 +300,7 @@ type TranslationScore struct {
 type TranslationRound struct {
 	Number       int                `json:"number"`       // 1, 2, 3
 	Sentence     string             `json:"sentence"`     // Korean sentence
+	Tense        string             `json:"tense"`        // 시제: "현재형", "과거형", "미래형"
 	Translations [2]string          `json:"translations"` // Player translations [player0, player1]
 	Submitted    [2]bool            `json:"submitted"`    // Whether each player has submitted
 	SubmitTimes  [2]time.Time       `json:"submitTimes"`  // When each player submitted

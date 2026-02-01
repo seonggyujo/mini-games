@@ -131,8 +131,23 @@ func (c *GroqClient) ChatWithTemp(systemPrompt, userPrompt string, temperature f
 	return strings.TrimSpace(chatResp.Choices[0].Message.Content), nil
 }
 
+// SentenceWithTense represents a sentence with its tense
+type SentenceWithTense struct {
+	Sentence string `json:"sentence"`
+	Tense    string `json:"tense"` // "현재형", "과거형", "미래형"
+}
+
 // GenerateSentence generates a Korean sentence for translation practice
 func (c *GroqClient) GenerateSentence(difficulty string) (string, error) {
+	result, err := c.GenerateSentenceWithTense(difficulty)
+	if err != nil {
+		return "", err
+	}
+	return result.Sentence, nil
+}
+
+// GenerateSentenceWithTense generates a Korean sentence with tense information
+func (c *GroqClient) GenerateSentenceWithTense(difficulty string) (*SentenceWithTense, error) {
 	// 랜덤 시드 생성 (매번 다른 문장 유도)
 	randomSeed := rand.Intn(90000) + 10000
 
@@ -150,7 +165,8 @@ func (c *GroqClient) GenerateSentence(difficulty string) (string, error) {
 	systemPrompt := `당신은 한국어 원어민입니다. 영어 번역 연습을 위한 한국어 문장을 하나 생성하세요.
 
 규칙:
-- 한국어 문장만 출력하세요 (따옴표, 설명, 번호 없이)
+- 반드시 JSON 형식으로만 응답하세요: {"sentence": "문장", "tense": "시제"}
+- tense는 반드시 "현재형", "과거형", "미래형" 중 하나여야 합니다
 - 실제 한국인이 일상에서 자주 사용하는 자연스러운 표현을 사용하세요
 - 번역체나 어색한 표현을 절대 사용하지 마세요
 - 영어 단어를 포함하지 마세요
@@ -163,17 +179,19 @@ func (c *GroqClient) GenerateSentence(difficulty string) (string, error) {
 
 아주 쉬운 한국어 문장 (3-5 단어)을 만드세요.
 - 초등학생도 이해할 수 있는 쉬운 단어
-- 현재형 또는 과거형
-- 좋은 예시: "오늘 날씨가 좋아요", "친구랑 밥 먹었어요", "강아지가 귀여워요", "내일 학교 가요"
-- 나쁜 예시: "~하는 것이 좋다", "~할 수 있다면" (너무 복잡함)`, randomSeed, randomTopic)
+- 현재형, 과거형, 미래형 중 하나 선택
+- 좋은 예시: {"sentence": "오늘 날씨가 좋아요", "tense": "현재형"}
+- 좋은 예시: {"sentence": "어제 친구랑 밥 먹었어요", "tense": "과거형"}
+- 좋은 예시: {"sentence": "내일 학교 갈 거예요", "tense": "미래형"}`, randomSeed, randomTopic)
 	case "medium":
 		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s
 
 적당한 난이도의 한국어 문장 (5-8 단어)을 만드세요.
 - 중학생 수준의 어휘
 - 일상 대화에서 흔히 쓰는 표현
-- 좋은 예시: "주말에 친구들이랑 영화 보러 갈 거예요", "요즘 너무 바빠서 운동을 못 해요"
-- 나쁜 예시: "~에 대해 생각해 보면", "~라고 할 수 있다" (번역체)`, randomSeed, randomTopic)
+- 현재형, 과거형, 미래형 중 하나 선택
+- 좋은 예시: {"sentence": "주말에 친구들이랑 영화 보러 갈 거예요", "tense": "미래형"}
+- 좋은 예시: {"sentence": "요즘 너무 바빠서 운동을 못 해요", "tense": "현재형"}`, randomSeed, randomTopic)
 	case "hard":
 		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s
 
@@ -181,35 +199,62 @@ func (c *GroqClient) GenerateSentence(difficulty string) (string, error) {
 - 고등학생/성인 수준의 어휘
 - 복문이나 연결어미 사용 가능
 - 존댓말/반말 자유롭게
-- 좋은 예시: "어제 밤새 공부했더니 오늘 하루 종일 졸려서 집중이 안 돼요"
-- 나쁜 예시: "~하는 것이 중요하다고 생각된다" (논문체, 번역체)`, randomSeed, randomTopic)
+- 현재형, 과거형, 미래형 중 하나 선택 (메인 동사 기준)
+- 좋은 예시: {"sentence": "어제 밤새 공부했더니 오늘 하루 종일 졸려서 집중이 안 돼요", "tense": "현재형"}`, randomSeed, randomTopic)
 	default:
 		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s
 
-적당한 난이도의 자연스러운 한국어 문장 (5-8 단어)을 만드세요.`, randomSeed, randomTopic)
+적당한 난이도의 자연스러운 한국어 문장 (5-8 단어)을 만드세요.
+JSON 형식으로 응답: {"sentence": "문장", "tense": "시제"}`, randomSeed, randomTopic)
 	}
 
 	// Temperature 1.0으로 최대 다양성 유도
-	sentence, err := c.ChatWithTemp(systemPrompt, userPrompt, 1.0)
+	response, err := c.ChatWithTemp(systemPrompt, userPrompt, 1.0)
 	if err != nil {
 		// Return fallback sentence if API fails
-		return c.getFallbackSentence(difficulty), nil
+		return c.getFallbackSentenceWithTense(difficulty), nil
 	}
 
-	// Clean up the sentence (remove quotes if any)
-	sentence = strings.Trim(sentence, "\"'")
-	return sentence, nil
+	// Try to extract JSON from the response
+	jsonStart := strings.Index(response, "{")
+	jsonEnd := strings.LastIndex(response, "}")
+	if jsonStart >= 0 && jsonEnd > jsonStart {
+		response = response[jsonStart : jsonEnd+1]
+	}
+
+	var result SentenceWithTense
+	if err := json.Unmarshal([]byte(response), &result); err != nil {
+		// If parsing fails, try to use response as plain text
+		sentence := strings.Trim(response, "\"'")
+		return &SentenceWithTense{
+			Sentence: sentence,
+			Tense:    "현재형", // Default tense
+		}, nil
+	}
+
+	// Validate tense
+	if result.Tense != "현재형" && result.Tense != "과거형" && result.Tense != "미래형" {
+		result.Tense = "현재형" // Default to present tense
+	}
+
+	return &result, nil
 }
 
 // getFallbackSentence returns a default sentence when API fails
 func (c *GroqClient) getFallbackSentence(difficulty string) string {
+	result := c.getFallbackSentenceWithTense(difficulty)
+	return result.Sentence
+}
+
+// getFallbackSentenceWithTense returns a default sentence with tense when API fails
+func (c *GroqClient) getFallbackSentenceWithTense(difficulty string) *SentenceWithTense {
 	switch difficulty {
 	case "easy":
-		return "오늘 날씨가 좋습니다."
+		return &SentenceWithTense{Sentence: "오늘 날씨가 좋습니다.", Tense: "현재형"}
 	case "hard":
-		return "급할수록 돌아가라는 말처럼 서두르지 않고 차근차근 준비하는 것이 중요합니다."
+		return &SentenceWithTense{Sentence: "급할수록 돌아가라는 말처럼 서두르지 않고 차근차근 준비하는 것이 중요합니다.", Tense: "현재형"}
 	default:
-		return "요즘 바쁜 일상 속에서도 건강을 챙기는 것이 중요해요."
+		return &SentenceWithTense{Sentence: "요즘 바쁜 일상 속에서도 건강을 챙기는 것이 중요해요.", Tense: "현재형"}
 	}
 }
 

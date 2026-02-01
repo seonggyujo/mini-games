@@ -30,9 +30,11 @@ function TranslationLobby({ onBack }) {
   const [error, setError] = useState('');
   const [gameData, setGameData] = useState(null);
   const [initialSentence, setInitialSentence] = useState('');
+  const [initialTense, setInitialTense] = useState('현재형');
   const [rematchRequested, setRematchRequested] = useState(false);
   const [opponentReady, setOpponentReady] = useState(false);
   const [isHost, setIsHost] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const { isConnected, connect, disconnect, sendMessage, onMessage } = useTranslationWS();
   const { playBeep } = useSoundEffects();
@@ -64,6 +66,7 @@ function TranslationLobby({ onBack }) {
 
       onMessage('t_round_start', (data) => {
         setInitialSentence(data.sentence);
+        setInitialTense(data.tense || '현재형');
         setLobbyState('playing');
       }),
 
@@ -192,6 +195,25 @@ function TranslationLobby({ onBack }) {
     setIsHost(false);
   }, [sendMessage, disconnect]);
 
+  const handleCopyCode = useCallback(() => {
+    if (roomCode) {
+      navigator.clipboard.writeText(roomCode).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = roomCode;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  }, [roomCode]);
+
   // Render game screen
   if (lobbyState === 'playing' || lobbyState === 'result') {
     return (
@@ -200,6 +222,7 @@ function TranslationLobby({ onBack }) {
         opponentNickname={opponentNickname}
         difficulty={difficulty}
         initialSentence={initialSentence}
+        initialTense={initialTense}
         sendMessage={sendMessage}
         onMessage={onMessage}
         onFinished={(finalResult) => {
@@ -350,7 +373,16 @@ function TranslationLobby({ onBack }) {
           <h2>대기 중...</h2>
           <div className="room-code-display">
             <span className="label">방 코드</span>
-            <span className="code">{roomCode}</span>
+            <div className="code-with-copy">
+              <span className="code">{roomCode}</span>
+              <button 
+                className={`btn-copy ${copied ? 'copied' : ''}`} 
+                onClick={handleCopyCode}
+                title="클립보드에 복사"
+              >
+                {copied ? '복사됨!' : '복사'}
+              </button>
+            </div>
           </div>
           <p className="hint">친구에게 이 코드를 공유하세요!</p>
           <div className="waiting-spinner"></div>
