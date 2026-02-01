@@ -550,3 +550,21 @@
 .mute-button.muted {
   opacity: 0.5;
 }
+
+/* Final Result Button */
+.btn-final-result {
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #00b894, #00cec9);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-final-result:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4);
+}

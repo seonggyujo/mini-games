@@ -77,7 +77,7 @@ function TranslationLobby({ onBack }) {
       }),
 
       onMessage('t_game_over', (data) => {
-        setLobbyState('finished');
+        // lobbyState는 변경하지 않음 - TranslationBattle에서 onFinished() 호출 시 전환
         setGameData(prev => ({ ...prev, finalResult: data }));
         setRematchRequested(false);
         setOpponentReady(false);

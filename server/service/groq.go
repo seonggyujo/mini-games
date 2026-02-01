@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"strings"
@@ -13,7 +14,7 @@ import (
 
 const (
 	GroqAPIURL   = "https://api.groq.com/openai/v1/chat/completions"
-	GroqModel    = "llama-3.3-70b-versatile"
+	GroqModel    = "openai/gpt-oss-120b"
 	GroqTimeout  = 30 * time.Second
 )
 
@@ -71,6 +72,11 @@ type ChatResponse struct {
 
 // Chat sends a chat request to Groq API
 func (c *GroqClient) Chat(systemPrompt, userPrompt string) (string, error) {
+	return c.ChatWithTemp(systemPrompt, userPrompt, 0.7)
+}
+
+// ChatWithTemp sends a chat request to Groq API with custom temperature
+func (c *GroqClient) ChatWithTemp(systemPrompt, userPrompt string, temperature float64) (string, error) {
 	if !c.IsAvailable() {
 		return "", fmt.Errorf("Groq API key not configured")
 	}
@@ -81,7 +87,7 @@ func (c *GroqClient) Chat(systemPrompt, userPrompt string) (string, error) {
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: userPrompt},
 		},
-		Temperature: 0.7,
+		Temperature: temperature,
 		MaxTokens:   1024,
 	}
 
@@ -127,36 +133,49 @@ func (c *GroqClient) Chat(systemPrompt, userPrompt string) (string, error) {
 
 // GenerateSentence generates a Korean sentence for translation practice
 func (c *GroqClient) GenerateSentence(difficulty string) (string, error) {
+	// 랜덤 시드 생성 (매번 다른 문장 유도)
+	randomSeed := rand.Intn(90000) + 10000
+
 	systemPrompt := `You are a Korean language expert. Generate a single Korean sentence for English translation practice.
 
 Rules:
 - Output ONLY the Korean sentence, nothing else
 - No quotation marks, no explanation
 - Make it natural and commonly used in daily life
-- Do not include any English words`
+- Do not include any English words
+- IMPORTANT: Be highly creative and unique! Generate a completely different and unexpected sentence each time.
+- Avoid clichés, common examples, and repetitive patterns.
+- Think of diverse real-life scenarios, conversations, and situations.`
 
 	var userPrompt string
 	switch difficulty {
 	case "easy":
-		userPrompt = `Generate a simple Korean sentence (5-8 words).
+		userPrompt = fmt.Sprintf(`[Random seed: %d] Generate a simple Korean sentence (5-8 words).
 - Use basic vocabulary (TOPIK level 1-2)
 - Simple present or past tense
-- Topics: greetings, weather, food, family, daily activities`
+- Be CREATIVE: imagine a unique everyday moment or situation
+- Avoid generic sentences about weather, greetings, or "I like X"
+- Think of: shopping, hobbies, friends, school, home activities, etc.`, randomSeed)
 	case "medium":
-		userPrompt = `Generate a medium difficulty Korean sentence (8-12 words).
+		userPrompt = fmt.Sprintf(`[Random seed: %d] Generate a medium difficulty Korean sentence (8-12 words).
 - Use intermediate vocabulary (TOPIK level 3-4)
 - Can include compound sentences, honorifics
-- Topics: work, travel, opinions, emotions, plans`
+- Be CREATIVE: think of an interesting, specific scenario
+- Avoid generic topics - be specific and vivid
+- Think of: workplace situations, travel experiences, personal opinions, future plans, memories, etc.`, randomSeed)
 	case "hard":
-		userPrompt = `Generate a challenging Korean sentence (12-18 words).
+		userPrompt = fmt.Sprintf(`[Random seed: %d] Generate a challenging Korean sentence (12-18 words).
 - Use advanced vocabulary (TOPIK level 5-6)
 - Include idioms, proverbs, or complex grammar
-- Topics: society, culture, abstract concepts, formal situations`
+- Be CREATIVE: use sophisticated expressions about life, philosophy, society, culture
+- Make it thought-provoking and unique`, randomSeed)
 	default:
-		userPrompt = `Generate a medium difficulty Korean sentence (8-12 words).`
+		userPrompt = fmt.Sprintf(`[Random seed: %d] Generate a medium difficulty Korean sentence (8-12 words).
+- Be creative and unique, avoid common patterns.`, randomSeed)
 	}
 
-	sentence, err := c.Chat(systemPrompt, userPrompt)
+	// Temperature 0.9로 더 다양한 출력 유도
+	sentence, err := c.ChatWithTemp(systemPrompt, userPrompt, 0.9)
 	if err != nil {
 		// Return fallback sentence if API fails
 		return c.getFallbackSentence(difficulty), nil

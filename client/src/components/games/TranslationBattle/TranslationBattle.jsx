@@ -239,7 +239,7 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
             <p>{roundResult.modelAnswer}</p>
           </div>
 
-          {!isGameOver && (
+          {!isGameOver ? (
             <div className="next-round-section">
               <button 
                 className={`btn-next-round ${nextRoundReady ? 'ready' : ''}`}
@@ -258,6 +258,15 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
               {nextRoundReady && opponentNextReady && (
                 <p className="waiting-next-text">다음 라운드 시작 중...</p>
               )}
+            </div>
+          ) : (
+            <div className="next-round-section">
+              <button 
+                className="btn-final-result"
+                onClick={onFinished}
+              >
+                최종 결과 보기
+              </button>
             </div>
           )}
         </div>
