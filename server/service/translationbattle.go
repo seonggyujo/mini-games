@@ -1,7 +1,8 @@
 package service
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"math/big"
 	"sync"
 	"time"
 
@@ -34,12 +35,13 @@ func NewTranslationRoomManager() *TranslationRoomManager {
 	return rm
 }
 
-// generateRoomCode generates a 6-character uppercase room code
+// generateRoomCode generates a 6-character uppercase room code using crypto/rand
 func generateTranslationRoomCode() string {
 	const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	code := make([]byte, 6)
 	for i := range code {
-		code[i] = letters[rand.Intn(len(letters))]
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
+		code[i] = letters[n.Int64()]
 	}
 	return string(code)
 }
@@ -526,9 +528,9 @@ func (rm *TranslationRoomManager) endGame(room *model.TranslationRoom) {
 // HandleRematch handles a rematch request
 func (rm *TranslationRoomManager) HandleRematch(room *model.TranslationRoom, playerIndex int) {
 	room.Mu.Lock()
-	defer room.Mu.Unlock()
 
 	if room.State != model.TStateFinished {
+		room.Mu.Unlock()
 		return
 	}
 
@@ -545,14 +547,19 @@ func (rm *TranslationRoomManager) HandleRematch(room *model.TranslationRoom, pla
 		room.State = model.TStateReady
 		room.StopGame = make(chan struct{})
 		room.RematchReady = [2]bool{false, false}
+		difficulty := room.Difficulty // Lock 해제 전에 값 복사
 
 		// Send rematch start
 		room.Players[0].SendJSON(model.TRematchStartMsg{Type: "t_rematch_start"})
 		room.Players[1].SendJSON(model.TRematchStartMsg{Type: "t_rematch_start"})
 
-		// Start new game with same difficulty
-		go rm.StartGame(room, room.Difficulty)
+		// Lock 해제 후 StartGame 호출 (데드락 방지)
+		room.Mu.Unlock()
+		go rm.StartGame(room, difficulty)
+		return
 	}
+
+	room.Mu.Unlock()
 }
 
 // HandleNextRound handles a player's next round ready signal

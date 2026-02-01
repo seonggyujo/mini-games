@@ -136,9 +136,9 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
     }
   }, [timeLeft, phase, submitted, playTick]);
 
-  // 시간 종료 시 자동 제출
+  // 시간 종료 시 자동 제출 (서버는 timeLeft <= 0이면 바로 평가 단계로 진입하므로 1초 남았을 때 제출)
   useEffect(() => {
-    if (timeLeft === 0 && !submitted && phase === 'playing') {
+    if (timeLeft <= 1 && !submitted && phase === 'playing') {
       handleSubmit();
     }
   }, [timeLeft, submitted, phase, handleSubmit]);

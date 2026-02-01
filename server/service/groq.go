@@ -136,78 +136,57 @@ func (c *GroqClient) GenerateSentence(difficulty string) (string, error) {
 	// 랜덤 시드 생성 (매번 다른 문장 유도)
 	randomSeed := rand.Intn(90000) + 10000
 
-	// 다양한 랜덤 요소들
+	// 다양한 랜덤 주제들
 	topics := []string{
 		"여행", "음식", "취미", "가족", "친구", "직장", "학교", "건강",
 		"운동", "쇼핑", "날씨", "계절", "동물", "음악", "영화",
 		"책", "게임", "기술", "자연", "도시", "바다", "산",
 		"커피", "요리", "청소", "빨래", "전화", "선물", "약속", "휴가",
 	}
-	situations := []string{
-		"아침에", "점심시간에", "저녁에", "주말에", "휴일에",
-		"비 오는 날", "눈 오는 날", "여름에", "겨울에", "봄에", "가을에",
-		"출근길에", "퇴근 후", "집에서", "카페에서", "공원에서",
-		"회사에서", "학교에서", "병원에서", "마트에서", "식당에서",
-	}
-	moods := []string{
-		"기쁜", "슬픈", "피곤한", "신나는", "걱정되는",
-		"편안한", "바쁜", "심심한", "배고픈", "졸린",
-		"행복한", "설레는", "긴장한", "궁금한", "만족스러운",
-	}
-	actions := []string{
-		"계획을 세우는", "추억하는", "결정하는", "도움을 주는", "배우는",
-		"만나는", "기다리는", "준비하는", "즐기는", "고민하는",
-		"찾는", "사는", "먹는", "마시는", "보는", "듣는", "말하는",
-	}
 
-	// 랜덤 요소 선택
+	// 랜덤 주제 선택
 	randomTopic := topics[rand.Intn(len(topics))]
-	randomSituation := situations[rand.Intn(len(situations))]
-	randomMood := moods[rand.Intn(len(moods))]
-	randomAction := actions[rand.Intn(len(actions))]
 
-	systemPrompt := `You are a Korean language expert. Generate a single Korean sentence for English translation practice.
+	systemPrompt := `당신은 한국어 원어민입니다. 영어 번역 연습을 위한 한국어 문장을 하나 생성하세요.
 
-Rules:
-- Output ONLY the Korean sentence, nothing else
-- No quotation marks, no explanation
-- Make it natural and commonly used in daily life
-- Do not include any English words
-- MUST incorporate the given random elements (topic, situation, mood, action)
-- Create a completely unique and unexpected sentence every time`
+규칙:
+- 한국어 문장만 출력하세요 (따옴표, 설명, 번호 없이)
+- 실제 한국인이 일상에서 자주 사용하는 자연스러운 표현을 사용하세요
+- 번역체나 어색한 표현을 절대 사용하지 마세요
+- 영어 단어를 포함하지 마세요
+- 주어진 주제를 자연스럽게 반영하되, 억지로 넣지 마세요`
 
 	var userPrompt string
 	switch difficulty {
 	case "easy":
-		userPrompt = fmt.Sprintf(`[Seed: %d] [Topic: %s] [Situation: %s]
+		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s
 
-Generate a VERY SIMPLE Korean sentence (3-5 words only).
-- Elementary school level vocabulary
-- Simple present or past tense only
-- Examples of this level: "나는 밥을 먹어요", "오늘 학교에 갔어요", "친구가 좋아요"
-- Incorporate the topic "%s" naturally
-- Keep it SHORT and EASY`, randomSeed, randomTopic, randomSituation, randomTopic)
+아주 쉬운 한국어 문장 (3-5 단어)을 만드세요.
+- 초등학생도 이해할 수 있는 쉬운 단어
+- 현재형 또는 과거형
+- 좋은 예시: "오늘 날씨가 좋아요", "친구랑 밥 먹었어요", "강아지가 귀여워요", "내일 학교 가요"
+- 나쁜 예시: "~하는 것이 좋다", "~할 수 있다면" (너무 복잡함)`, randomSeed, randomTopic)
 	case "medium":
-		userPrompt = fmt.Sprintf(`[Seed: %d] [Topic: %s] [Situation: %s] [Mood: %s]
+		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s
 
-Generate a simple Korean sentence (5-8 words).
-- Use basic vocabulary (TOPIK level 1-2)
-- Simple sentence structure
-- Incorporate: topic "%s", situation "%s"
-- Make it natural everyday conversation`, randomSeed, randomTopic, randomSituation, randomMood, randomTopic, randomSituation)
+적당한 난이도의 한국어 문장 (5-8 단어)을 만드세요.
+- 중학생 수준의 어휘
+- 일상 대화에서 흔히 쓰는 표현
+- 좋은 예시: "주말에 친구들이랑 영화 보러 갈 거예요", "요즘 너무 바빠서 운동을 못 해요"
+- 나쁜 예시: "~에 대해 생각해 보면", "~라고 할 수 있다" (번역체)`, randomSeed, randomTopic)
 	case "hard":
-		userPrompt = fmt.Sprintf(`[Seed: %d] [Topic: %s] [Situation: %s] [Mood: %s] [Action: %s]
+		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s
 
-Generate a medium difficulty Korean sentence (8-12 words).
-- Use intermediate vocabulary (TOPIK level 3-4)
-- Can include compound sentences or honorifics
-- Creatively combine: topic "%s", situation "%s", mood "%s", action "%s"
-- Make it specific and vivid`, randomSeed, randomTopic, randomSituation, randomMood, randomAction, randomTopic, randomSituation, randomMood, randomAction)
+조금 어려운 한국어 문장 (8-12 단어)을 만드세요.
+- 고등학생/성인 수준의 어휘
+- 복문이나 연결어미 사용 가능
+- 존댓말/반말 자유롭게
+- 좋은 예시: "어제 밤새 공부했더니 오늘 하루 종일 졸려서 집중이 안 돼요"
+- 나쁜 예시: "~하는 것이 중요하다고 생각된다" (논문체, 번역체)`, randomSeed, randomTopic)
 	default:
-		userPrompt = fmt.Sprintf(`[Seed: %d] [Topic: %s] [Situation: %s]
+		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s
 
-Generate a simple Korean sentence (5-8 words) about "%s".
-- Be creative and unique`, randomSeed, randomTopic, randomSituation, randomTopic)
+적당한 난이도의 자연스러운 한국어 문장 (5-8 단어)을 만드세요.`, randomSeed, randomTopic)
 	}
 
 	// Temperature 1.0으로 최대 다양성 유도
