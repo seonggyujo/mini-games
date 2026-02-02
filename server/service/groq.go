@@ -151,61 +151,104 @@ func (c *GroqClient) GenerateSentenceWithTense(difficulty string) (*SentenceWith
 	// 랜덤 시드 생성 (매번 다른 문장 유도)
 	randomSeed := rand.Intn(90000) + 10000
 
-	// 다양한 랜덤 주제들
+	// 다양한 랜덤 주제들 (60개 이상)
 	topics := []string{
-		"여행", "음식", "취미", "가족", "친구", "직장", "학교", "건강",
-		"운동", "쇼핑", "날씨", "계절", "동물", "음악", "영화",
-		"책", "게임", "기술", "자연", "도시", "바다", "산",
-		"커피", "요리", "청소", "빨래", "전화", "선물", "약속", "휴가",
+		// 일상생활
+		"아침 루틴", "저녁 일과", "주말 계획", "평일 일상", "출퇴근",
+		// 음식/요리
+		"아침식사", "점심", "저녁식사", "간식", "디저트", "요리", "배달음식", "외식", "카페",
+		// 관계
+		"가족", "친구", "직장동료", "이웃", "선생님", "선후배",
+		// 장소
+		"학교", "회사", "마트", "병원", "공원", "도서관", "헬스장", "영화관", "백화점",
+		// 활동
+		"운동", "독서", "게임", "쇼핑", "청소", "빨래", "산책", "등산", "수영", "자전거",
+		// 감정/상태
+		"피곤함", "기쁨", "걱정", "설렘", "그리움", "후회", "감사", "짜증",
+		// 계절/날씨
+		"봄", "여름", "가을", "겨울", "비오는 날", "눈오는 날", "더운 날", "추운 날",
+		// 이벤트
+		"생일", "졸업", "입학", "여행", "휴가", "명절", "기념일", "면접", "시험",
+		// 기타
+		"건강", "다이어트", "취미", "반려동물", "식물", "음악", "영화", "드라마", "뉴스",
 	}
 
-	// 랜덤 주제 선택
+	// 다양한 상황 목록
+	situations := []string{
+		"친구에게 말할 때", "부모님께 말씀드릴 때", "혼잣말할 때", "일기를 쓸 때",
+		"SNS에 올릴 때", "선생님께 여쭤볼 때", "동생에게 말할 때", "직장 동료와 대화할 때",
+	}
+
+	// 다양한 화자 유형
+	speakers := []string{
+		"학생", "직장인", "주부", "대학생", "고등학생", "아이", "선생님", "회사원",
+	}
+
+	// 랜덤 요소 선택
 	randomTopic := topics[rand.Intn(len(topics))]
+	randomSituation := situations[rand.Intn(len(situations))]
+	randomSpeaker := speakers[rand.Intn(len(speakers))]
 
 	systemPrompt := `당신은 한국어 원어민입니다. 영어 번역 연습을 위한 한국어 문장을 하나 생성하세요.
 
 규칙:
 - 반드시 JSON 형식으로만 응답하세요: {"sentence": "문장", "tense": "시제"}
 - tense는 반드시 "현재형", "과거형", "미래형" 중 하나여야 합니다
+- **주어를 반드시 명시하세요** (예: "나는", "우리는", "그녀는", "철수는", "엄마가", "친구들이" 등)
+- 주어가 생략된 문장은 절대 만들지 마세요
 - 실제 한국인이 일상에서 자주 사용하는 자연스러운 표현을 사용하세요
 - 번역체나 어색한 표현을 절대 사용하지 마세요
 - 영어 단어를 포함하지 마세요
-- 주어진 주제를 자연스럽게 반영하되, 억지로 넣지 마세요`
+- 매번 완전히 새롭고 다른 문장을 만드세요`
 
 	var userPrompt string
 	switch difficulty {
 	case "easy":
-		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s
+		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s, 화자: %s
 
-아주 쉬운 한국어 문장 (3-5 단어)을 만드세요.
-- 초등학생도 이해할 수 있는 쉬운 단어
+아주 쉬운 한국어 문장 (4-6 단어)을 만드세요.
+- 주어를 반드시 포함하세요 (나는, 우리는, 엄마가, 친구가 등)
+- 초등학생도 이해할 수 있는 쉬운 단어만 사용
+- 단순한 문장 구조 (주어 + 목적어/부사 + 동사)
 - 현재형, 과거형, 미래형 중 하나 선택
-- 좋은 예시: {"sentence": "오늘 날씨가 좋아요", "tense": "현재형"}
-- 좋은 예시: {"sentence": "어제 친구랑 밥 먹었어요", "tense": "과거형"}
-- 좋은 예시: {"sentence": "내일 학교 갈 거예요", "tense": "미래형"}`, randomSeed, randomTopic)
+- 좋은 예시: {"sentence": "나는 어제 학교에 갔어요", "tense": "과거형"}
+- 좋은 예시: {"sentence": "엄마가 맛있는 밥을 해요", "tense": "현재형"}
+- 좋은 예시: {"sentence": "우리는 내일 공원에 갈 거예요", "tense": "미래형"}
+- 나쁜 예시: {"sentence": "오늘 날씨가 좋아요", "tense": "현재형"} (주어 불명확)`, randomSeed, randomTopic, randomSpeaker)
 	case "medium":
-		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s
+		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s, 상황: %s, 화자: %s
 
-적당한 난이도의 한국어 문장 (5-8 단어)을 만드세요.
-- 중학생 수준의 어휘
-- 일상 대화에서 흔히 쓰는 표현
-- 현재형, 과거형, 미래형 중 하나 선택
-- 좋은 예시: {"sentence": "주말에 친구들이랑 영화 보러 갈 거예요", "tense": "미래형"}
-- 좋은 예시: {"sentence": "요즘 너무 바빠서 운동을 못 해요", "tense": "현재형"}`, randomSeed, randomTopic)
-	case "hard":
-		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s
-
-조금 어려운 한국어 문장 (8-12 단어)을 만드세요.
-- 고등학생/성인 수준의 어휘
-- 복문이나 연결어미 사용 가능
-- 존댓말/반말 자유롭게
+중급 난이도의 한국어 문장 (8-12 단어)을 만드세요.
+- 주어를 반드시 포함하세요
+- 고등학생/성인 수준의 어휘 사용
+- 복문 또는 연결어미 사용 (예: -아서, -으면, -지만, -는데, -고)
+- 일상에서 실제로 쓰는 자연스러운 표현
 - 현재형, 과거형, 미래형 중 하나 선택 (메인 동사 기준)
-- 좋은 예시: {"sentence": "어제 밤새 공부했더니 오늘 하루 종일 졸려서 집중이 안 돼요", "tense": "현재형"}`, randomSeed, randomTopic)
-	default:
-		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s
+- 좋은 예시: {"sentence": "나는 어제 비가 와서 우산을 들고 나갔는데 결국 안 썼어요", "tense": "과거형"}
+- 좋은 예시: {"sentence": "우리 팀이 이번 프로젝트를 성공하면 다 같이 회식하기로 했어요", "tense": "과거형"}
+- 좋은 예시: {"sentence": "동생이 요즘 시험 준비하느라 너무 바빠서 밥도 제대로 못 먹어요", "tense": "현재형"}`, randomSeed, randomTopic, randomSituation, randomSpeaker)
+	case "hard":
+		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s, 상황: %s, 화자: %s
 
-적당한 난이도의 자연스러운 한국어 문장 (5-8 단어)을 만드세요.
-JSON 형식으로 응답: {"sentence": "문장", "tense": "시제"}`, randomSeed, randomTopic)
+고급 난이도의 한국어 문장 (10-15 단어)을 만드세요.
+- 주어를 반드시 포함하세요
+- 성인/비즈니스 수준의 어휘 사용
+- 다음 요소 중 하나 이상 포함:
+  * 관용 표현 (예: 발이 넓다, 손이 크다, 눈이 높다, 입이 무겁다)
+  * 속담이나 격언 활용 (예: ~라는 말처럼, ~다더니)
+  * 복잡한 연결 구조 (-았/었더니, -고 나서, -ㄴ/는 바람에, -기는커녕)
+  * 높임말/겸양어 사용
+- 현재형, 과거형, 미래형 중 하나 선택 (메인 동사 기준)
+- 좋은 예시: {"sentence": "부장님께서 급한 일이 생기셔서 오늘 회의를 내일로 미루자고 하셨어요", "tense": "과거형"}
+- 좋은 예시: {"sentence": "발 없는 말이 천 리 간다더니 제가 한 말이 벌써 다른 부서까지 퍼졌대요", "tense": "과거형"}
+- 좋은 예시: {"sentence": "그 친구는 입이 무거워서 비밀을 말해도 절대 다른 사람에게 말하지 않아요", "tense": "현재형"}`, randomSeed, randomTopic, randomSituation, randomSpeaker)
+	default:
+		userPrompt = fmt.Sprintf(`[시드: %d] 주제: %s, 화자: %s
+
+적당한 난이도의 자연스러운 한국어 문장 (6-10 단어)을 만드세요.
+- 주어를 반드시 포함하세요
+- 일상에서 자주 쓰는 표현 사용
+JSON 형식으로 응답: {"sentence": "문장", "tense": "시제"}`, randomSeed, randomTopic, randomSpeaker)
 	}
 
 	// Temperature 1.0으로 최대 다양성 유도
@@ -275,7 +318,7 @@ type TranslationEval struct {
 
 // EvaluateTranslations evaluates two translations of a Korean sentence
 func (c *GroqClient) EvaluateTranslations(korean, trans1, trans2 string) (*EvaluationResult, error) {
-	systemPrompt := `You are an expert English-Korean translator and language evaluator.
+	systemPrompt := `You are an expert English-Korean translator and native English speaker.
 Evaluate two English translations of the given Korean sentence.
 You must respond in valid JSON format only, no other text.
 
@@ -283,6 +326,13 @@ Scoring guidelines:
 - meaning (0-40): Does it accurately convey the original meaning? Full marks for complete accuracy.
 - grammar (0-30): Is the English grammar correct? Deduct for errors.
 - naturalness (0-30): Does it sound natural to native speakers? Consider word choice and phrasing.
+
+IMPORTANT for model answer:
+- The model answer MUST be what a native English speaker would actually say in real conversation
+- Use common, everyday expressions - NOT overly formal or textbook-like translations
+- Prefer natural contractions (I'm, don't, can't, wasn't) when appropriate for casual speech
+- Use natural word order and phrasing that sounds conversational
+- Avoid literal word-for-word translations that sound awkward in English
 
 If a translation is empty or clearly not an attempt, give 0 for all scores.`
 
@@ -292,8 +342,8 @@ Translation 1: "%s"
 Translation 2: "%s"
 
 Evaluate each translation and provide:
-- Brief feedback for each translation (in Korean, 1-2 sentences)
-- A model answer (the best possible translation)
+- Brief feedback for each translation (in Korean, 1-2 sentences, be specific about what's good or needs improvement)
+- A model answer that sounds completely natural - exactly how a native English speaker would express this in everyday conversation (NOT a textbook translation)
 
 Respond ONLY in this exact JSON format:
 {

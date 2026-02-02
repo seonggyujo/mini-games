@@ -27,10 +27,12 @@ function TranslationLobby({ onBack }) {
   const [opponentNickname, setOpponentNickname] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [difficulty, setDifficulty] = useState('medium');
+  const [maxRounds, setMaxRounds] = useState(5); // 라운드 수 (0 = 무제한)
   const [error, setError] = useState('');
   const [gameData, setGameData] = useState(null);
   const [initialSentence, setInitialSentence] = useState('');
   const [initialTense, setInitialTense] = useState('현재형');
+  const [initialMaxRounds, setInitialMaxRounds] = useState(5);
   const [rematchRequested, setRematchRequested] = useState(false);
   const [opponentReady, setOpponentReady] = useState(false);
   const [isHost, setIsHost] = useState(false);
@@ -56,6 +58,7 @@ function TranslationLobby({ onBack }) {
 
       onMessage('t_game_start', (data) => {
         setDifficulty(data.difficulty);
+        setInitialMaxRounds(data.maxRounds || 5);
         setLobbyState('countdown');
       }),
 
@@ -67,6 +70,7 @@ function TranslationLobby({ onBack }) {
       onMessage('t_round_start', (data) => {
         setInitialSentence(data.sentence);
         setInitialTense(data.tense || '현재형');
+        setInitialMaxRounds(data.maxRounds || 5);
         setLobbyState('playing');
       }),
 
@@ -162,8 +166,8 @@ function TranslationLobby({ onBack }) {
   }, [nickname, inputRoomCode, connect, sendMessage]);
 
   const handleStartGame = useCallback(() => {
-    sendMessage({ type: 't_start_game', difficulty });
-  }, [sendMessage, difficulty]);
+    sendMessage({ type: 't_start_game', difficulty, maxRounds });
+  }, [sendMessage, difficulty, maxRounds]);
 
   const handleCancel = useCallback(() => {
     sendMessage({ type: 't_leave' });
@@ -221,6 +225,7 @@ function TranslationLobby({ onBack }) {
         nickname={nickname}
         opponentNickname={opponentNickname}
         difficulty={difficulty}
+        maxRounds={initialMaxRounds}
         initialSentence={initialSentence}
         initialTense={initialTense}
         sendMessage={sendMessage}
@@ -350,23 +355,41 @@ function TranslationLobby({ onBack }) {
                 onClick={() => setDifficulty('easy')}
               >
                 쉬움
-                <span className="difficulty-desc">기본 문장</span>
+                <span className="difficulty-desc">짧은 문장 (초급)</span>
               </button>
               <button 
                 className={`difficulty-btn ${difficulty === 'medium' ? 'selected' : ''}`}
                 onClick={() => setDifficulty('medium')}
               >
                 보통
-                <span className="difficulty-desc">중급 문장</span>
+                <span className="difficulty-desc">복문 포함 (중급)</span>
               </button>
               <button 
                 className={`difficulty-btn ${difficulty === 'hard' ? 'selected' : ''}`}
                 onClick={() => setDifficulty('hard')}
               >
                 어려움
-                <span className="difficulty-desc">고급 문장</span>
+                <span className="difficulty-desc">관용어/속담 (고급)</span>
               </button>
             </div>
+          </div>
+
+          <div className="rounds-selector">
+            <label>라운드 수</label>
+            <div className="rounds-options">
+              {[5, 10, 15, 20, 0].map(rounds => (
+                <button 
+                  key={rounds}
+                  className={`rounds-btn ${maxRounds === rounds ? 'selected' : ''}`}
+                  onClick={() => setMaxRounds(rounds)}
+                >
+                  {rounds === 0 ? '무제한' : `${rounds}`}
+                </button>
+              ))}
+            </div>
+            {maxRounds === 0 && (
+              <p className="unlimited-hint">언제든 "그만하기"를 눌러 종료할 수 있습니다</p>
+            )}
           </div>
 
           <button className="btn-start" onClick={handleStartGame}>

@@ -11,11 +11,10 @@ import (
 )
 
 const (
-	TRoundDuration  = 60 * time.Second  // 60 seconds per round
-	TRoomTimeout    = 10 * time.Minute  // Room expires after 10 minutes of inactivity
-	TPostGameTimeout = 3 * time.Minute  // Time to wait for rematch after game ends
-	TMaxRounds      = 3                 // Best of 3
-	TWinsNeeded     = 2                 // First to 2 wins
+	TRoundDuration   = 60 * time.Second  // 60 seconds per round
+	TRoomTimeout     = 10 * time.Minute  // Room expires after 10 minutes of inactivity
+	TPostGameTimeout = 3 * time.Minute   // Time to wait for rematch after game ends
+	TDefaultRounds   = 5                 // Default number of rounds
 )
 
 // TranslationRoomManager manages all translation battle rooms
@@ -62,13 +61,15 @@ func (rm *TranslationRoomManager) CreateRoom(player *model.Player) (*model.Trans
 	}
 
 	room := &model.TranslationRoom{
-		Code:       code,
-		Players:    [2]*model.Player{player, nil},
-		State:      model.TStateWaiting,
-		Difficulty: model.DifficultyMedium,
-		Rounds:     make([]model.TranslationRound, 0, TMaxRounds),
-		CreatedAt:  time.Now(),
-		StopGame:   make(chan struct{}),
+		Code:        code,
+		Players:     [2]*model.Player{player, nil},
+		State:       model.TStateWaiting,
+		Difficulty:  model.DifficultyMedium,
+		MaxRounds:   TDefaultRounds,
+		IsUnlimited: false,
+		Rounds:      make([]model.TranslationRound, 0),
+		CreatedAt:   time.Now(),
+		StopGame:    make(chan struct{}),
 	}
 
 	player.Index = 0
@@ -175,7 +176,7 @@ func (rm *TranslationRoomManager) RemovePlayer(code string, playerIndex int) {
 }
 
 // StartGame starts the translation battle game
-func (rm *TranslationRoomManager) StartGame(room *model.TranslationRoom, difficulty model.TranslationDifficulty) {
+func (rm *TranslationRoomManager) StartGame(room *model.TranslationRoom, difficulty model.TranslationDifficulty, maxRounds int) {
 	room.Mu.Lock()
 	
 	if room.State != model.TStateReady || room.Players[0] == nil || room.Players[1] == nil {
@@ -184,15 +185,17 @@ func (rm *TranslationRoomManager) StartGame(room *model.TranslationRoom, difficu
 	}
 
 	room.Difficulty = difficulty
+	room.MaxRounds = maxRounds
+	room.IsUnlimited = (maxRounds == 0)
 	room.State = model.TStateCountdown
-	room.Rounds = make([]model.TranslationRound, 0, TMaxRounds)
+	room.Rounds = make([]model.TranslationRound, 0)
 	room.CurrentRound = 0
 	room.Wins = [2]int{0, 0}
 	room.TotalScores = [2]int{0, 0}
 	room.Mu.Unlock()
 
 	// Notify both players that game is starting
-	startMsg := model.TGameStartMsg{Type: "t_game_start", Difficulty: string(difficulty)}
+	startMsg := model.TGameStartMsg{Type: "t_game_start", Difficulty: string(difficulty), MaxRounds: maxRounds}
 	room.Players[0].SendJSON(startMsg)
 	room.Players[1].SendJSON(startMsg)
 
@@ -238,11 +241,12 @@ func (rm *TranslationRoomManager) startRound(room *model.TranslationRoom) {
 
 	// Notify both players
 	roundMsg := model.TRoundStartMsg{
-		Type:     "t_round_start",
-		Round:    round.Number,
-		Sentence: sentenceResult.Sentence,
-		Tense:    sentenceResult.Tense,
-		TimeLeft: int(TRoundDuration.Seconds()),
+		Type:      "t_round_start",
+		Round:     round.Number,
+		MaxRounds: room.MaxRounds,
+		Sentence:  sentenceResult.Sentence,
+		Tense:     sentenceResult.Tense,
+		TimeLeft:  int(TRoundDuration.Seconds()),
 	}
 	room.Players[0].SendJSON(roundMsg)
 	room.Players[1].SendJSON(roundMsg)
@@ -402,8 +406,15 @@ func (rm *TranslationRoomManager) evaluateRound(room *model.TranslationRoom) {
 	room.TotalScores[0] += currentRound.Scores[0].Total
 	room.TotalScores[1] += currentRound.Scores[1].Total
 
-	// Check if game is over
-	isGameOver := room.Wins[0] >= TWinsNeeded || room.Wins[1] >= TWinsNeeded || room.CurrentRound >= TMaxRounds-1
+	// Check if game is over (지정 라운드 모드에서만)
+	var isGameOver bool
+	if room.IsUnlimited {
+		// 무제한 모드: HandleStopGame 호출 전까지 종료 안함
+		isGameOver = false
+	} else {
+		// 지정 라운드 모드: 모든 라운드 완료 시 종료
+		isGameOver = room.CurrentRound >= room.MaxRounds-1
+	}
 	room.State = model.TStateResult
 	room.Mu.Unlock()
 
@@ -510,32 +521,22 @@ func (rm *TranslationRoomManager) endGame(room *model.TranslationRoom) {
 	}
 	room.Mu.Unlock()
 
-	// Determine winner
+	// Determine winner by total score (총점제)
 	var winner0, winner1 string
 	var winnerNickname string
 
-	if wins0 > wins1 {
+	if total0 > total1 {
 		winner0 = "me"
 		winner1 = "opponent"
 		winnerNickname = nick0
-	} else if wins1 > wins0 {
+	} else if total1 > total0 {
 		winner0 = "opponent"
 		winner1 = "me"
 		winnerNickname = nick1
 	} else {
-		// If wins are equal, check total score
-		if total0 > total1 {
-			winner0 = "me"
-			winner1 = "opponent"
-			winnerNickname = nick0
-		} else if total1 > total0 {
-			winner0 = "opponent"
-			winner1 = "me"
-			winnerNickname = nick1
-		} else {
-			winner0 = "draw"
-			winner1 = "draw"
-		}
+		// 총점이 같으면 무승부
+		winner0 = "draw"
+		winner1 = "draw"
 	}
 
 	room.Mu.RLock()
@@ -592,6 +593,7 @@ func (rm *TranslationRoomManager) HandleRematch(room *model.TranslationRoom, pla
 		room.StopGame = make(chan struct{})
 		room.RematchReady = [2]bool{false, false}
 		difficulty := room.Difficulty // Copy value before releasing lock
+		maxRounds := room.MaxRounds   // 기존 라운드 설정 유지
 
 		// Send rematch start
 		room.Players[0].SendJSON(model.TRematchStartMsg{Type: "t_rematch_start"})
@@ -599,7 +601,7 @@ func (rm *TranslationRoomManager) HandleRematch(room *model.TranslationRoom, pla
 
 		// Release lock before calling StartGame (avoid deadlock)
 		room.Mu.Unlock()
-		go rm.StartGame(room, difficulty)
+		go rm.StartGame(room, difficulty, maxRounds)
 		return
 	}
 
@@ -616,8 +618,13 @@ func (rm *TranslationRoomManager) HandleNextRound(room *model.TranslationRoom, p
 		return
 	}
 	
-	// Check if game is already over
-	isGameOver := room.Wins[0] >= TWinsNeeded || room.Wins[1] >= TWinsNeeded || room.CurrentRound >= TMaxRounds-1
+	// Check if game is already over (지정 라운드 모드에서만)
+	var isGameOver bool
+	if room.IsUnlimited {
+		isGameOver = false
+	} else {
+		isGameOver = room.CurrentRound >= room.MaxRounds-1
+	}
 	if isGameOver {
 		room.Mu.Unlock()
 		return
@@ -642,6 +649,48 @@ func (rm *TranslationRoomManager) HandleNextRound(room *model.TranslationRoom, p
 	}
 	
 	room.Mu.Unlock()
+}
+
+// HandleStopGame handles stop game request in unlimited mode
+func (rm *TranslationRoomManager) HandleStopGame(room *model.TranslationRoom, playerIndex int) {
+	room.Mu.Lock()
+	
+	// 무제한 모드에서만 동작
+	if !room.IsUnlimited {
+		room.Mu.Unlock()
+		return
+	}
+	
+	// 플레이 중이거나 결과 화면일 때만 종료 가능
+	if room.State != model.TStatePlaying && room.State != model.TStateResult {
+		room.Mu.Unlock()
+		return
+	}
+	
+	// 종료 요청한 플레이어 닉네임
+	stoppedByNickname := ""
+	if room.Players[playerIndex] != nil {
+		stoppedByNickname = room.Players[playerIndex].Nickname
+	}
+	
+	room.Mu.Unlock()
+	
+	// 양 플레이어에게 게임 종료 알림
+	stoppedMsg := model.TGameStoppedMsg{
+		Type:      "t_game_stopped",
+		StoppedBy: stoppedByNickname,
+	}
+	room.Mu.RLock()
+	if room.Players[0] != nil {
+		room.Players[0].SendJSON(stoppedMsg)
+	}
+	if room.Players[1] != nil {
+		room.Players[1].SendJSON(stoppedMsg)
+	}
+	room.Mu.RUnlock()
+	
+	// 게임 종료 처리
+	rm.endGame(room)
 }
 
 // cleanupRoutine periodically cleans up expired rooms

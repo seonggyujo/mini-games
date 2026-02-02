@@ -3,9 +3,10 @@ import useSoundEffects from '../../../hooks/useSoundEffects';
 import { ConnectionState } from '../../../hooks/useTranslationWS';
 import './TranslationBattle.css';
 
-function TranslationBattle({ nickname, opponentNickname, difficulty, initialSentence, initialTense, sendMessage, onMessage, connectionState, onFinished }) {
+function TranslationBattle({ nickname, opponentNickname, difficulty, maxRounds, initialSentence, initialTense, sendMessage, onMessage, connectionState, onFinished }) {
   const [phase, setPhase] = useState('playing'); // playing, evaluating, result
   const [round, setRound] = useState(1);
+  const [currentMaxRounds, setCurrentMaxRounds] = useState(maxRounds || 5);
   const [sentence, setSentence] = useState(initialSentence || '');
   const [tense, setTense] = useState(initialTense || '현재형');
   const [translation, setTranslation] = useState('');
@@ -42,6 +43,7 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
       onMessage('t_round_start', (data) => {
         setPhase('playing');
         setRound(data.round);
+        setCurrentMaxRounds(data.maxRounds || 5);
         setSentence(data.sentence);
         setTense(data.tense || '현재형');
         setTimeLeft(data.timeLeft);
@@ -99,6 +101,11 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
         // 최종 결과 데이터 저장 - "최종 결과 보기" 버튼 클릭 시 사용
         setFinalResultData(data);
       }),
+
+      onMessage('t_game_stopped', (data) => {
+        // 무제한 모드에서 게임 종료됨 - 최종 결과로 이동
+        // t_game_over가 바로 뒤따라 옴
+      }),
     ];
 
     return () => {
@@ -132,6 +139,12 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
     sendMessage({ type: 't_next_round' });
     setNextRoundReady(true);
   }, [nextRoundReady, sendMessage]);
+
+  const handleStopGame = useCallback(() => {
+    if (window.confirm('정말 게임을 종료하시겠습니까?\n현재까지의 점수로 결과가 계산됩니다.')) {
+      sendMessage({ type: 't_stop_game' });
+    }
+  }, [sendMessage]);
 
   // Keyboard shortcut for submit (Ctrl+Enter)
   useEffect(() => {
@@ -219,7 +232,7 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
       <div className="translation-battle">
         <div className="battle-header">
           <div className="round-info">
-            <span className="round-number">Round {roundResult.round}/3</span>
+            <span className="round-number">Round {roundResult.round}{currentMaxRounds > 0 ? `/${currentMaxRounds}` : ''}</span>
             <span className="difficulty-label">{getDifficultyLabel()}</span>
           </div>
           <div className="score-display">
@@ -325,6 +338,15 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
                 {nextRoundReady ? '대기 중...' : '다음 라운드'}
               </button>
               
+              {currentMaxRounds === 0 && (
+                <button 
+                  className="btn-stop-game"
+                  onClick={handleStopGame}
+                >
+                  그만하기
+                </button>
+              )}
+              
               {opponentNextReady && !nextRoundReady && (
                 <p className="opponent-next-ready-text">상대가 준비됨!</p>
               )}
@@ -356,7 +378,7 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
       <div className="translation-battle">
         <div className="battle-header">
           <div className="round-info">
-            <span className="round-number">Round {round}/3</span>
+            <span className="round-number">Round {round}{currentMaxRounds > 0 ? `/${currentMaxRounds}` : ''}</span>
             <span className="difficulty-label">{getDifficultyLabel()}</span>
           </div>
           <div className="score-display">
@@ -397,7 +419,7 @@ function TranslationBattle({ nickname, opponentNickname, difficulty, initialSent
       
       <div className="battle-header">
         <div className="round-info">
-          <span className="round-number">Round {round}/3</span>
+          <span className="round-number">Round {round}{currentMaxRounds > 0 ? `/${currentMaxRounds}` : ''}</span>
           <span className="difficulty-label">{getDifficultyLabel()}</span>
         </div>
         <div className={`timer ${timeLeft <= 10 ? 'warning' : ''}`}>

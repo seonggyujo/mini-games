@@ -300,6 +300,7 @@ func HandleTranslationWS(w http.ResponseWriter, r *http.Request) {
 			RoomCode    string `json:"roomCode,omitempty"`
 			Nickname    string `json:"nickname,omitempty"`
 			Difficulty  string `json:"difficulty,omitempty"`
+			MaxRounds   int    `json:"maxRounds,omitempty"`
 			Translation string `json:"translation,omitempty"`
 		}
 
@@ -360,7 +361,12 @@ func HandleTranslationWS(w http.ResponseWriter, r *http.Request) {
 			case "hard":
 				difficulty = model.DifficultyHard
 			}
-			go translationRoomManager.StartGame(room, difficulty)
+			// Validate maxRounds (0=무제한, 5/10/15/20 허용)
+			maxRounds := msg.MaxRounds
+			if maxRounds != 0 && maxRounds != 5 && maxRounds != 10 && maxRounds != 15 && maxRounds != 20 {
+				maxRounds = 5 // 기본값
+			}
+			go translationRoomManager.StartGame(room, difficulty, maxRounds)
 
 		case "t_submit":
 			if room == nil {
@@ -379,6 +385,12 @@ func HandleTranslationWS(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			translationRoomManager.HandleNextRound(room, player.Index)
+
+		case "t_stop_game":
+			if room == nil {
+				continue
+			}
+			translationRoomManager.HandleStopGame(room, player.Index)
 
 		case "t_leave":
 			if roomCode != "" {

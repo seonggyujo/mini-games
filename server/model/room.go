@@ -172,12 +172,16 @@ type TranslationRoom struct {
 	State      TranslationGameState  `json:"state"`
 	Difficulty TranslationDifficulty `json:"difficulty"`
 
-	Rounds       []TranslationRound `json:"rounds"`
-	CurrentRound int                `json:"currentRound"` // 0, 1, 2
-	Wins         [2]int             `json:"wins"`         // Win count for each player
-	TotalScores  [2]int             `json:"totalScores"`  // Total scores across all rounds
-	RematchReady [2]bool            `json:"rematchReady"` // Whether each player is ready for rematch
-	NextRoundReady [2]bool          `json:"nextRoundReady"` // Whether each player is ready for next round
+	// 라운드 설정
+	MaxRounds   int  `json:"maxRounds"`   // 총 라운드 수 (0 = 무제한)
+	IsUnlimited bool `json:"isUnlimited"` // 무제한 모드 여부
+
+	Rounds         []TranslationRound `json:"rounds"`
+	CurrentRound   int                `json:"currentRound"`   // 현재 라운드 인덱스 (0부터 시작)
+	Wins           [2]int             `json:"wins"`           // Win count for each player
+	TotalScores    [2]int             `json:"totalScores"`    // Total scores across all rounds
+	RematchReady   [2]bool            `json:"rematchReady"`   // Whether each player is ready for rematch
+	NextRoundReady [2]bool            `json:"nextRoundReady"` // Whether each player is ready for next round
 
 	CreatedAt time.Time
 	Mu        sync.RWMutex
@@ -200,8 +204,9 @@ type TOpponentJoinedMsg struct {
 
 // TGameStartMsg is sent when game starts
 type TGameStartMsg struct {
-	Type       string `json:"type"` // "t_game_start"
+	Type       string `json:"type"`       // "t_game_start"
 	Difficulty string `json:"difficulty"`
+	MaxRounds  int    `json:"maxRounds"`  // 총 라운드 수 (0 = 무제한)
 }
 
 // TCountdownMsg is sent during countdown
@@ -212,11 +217,12 @@ type TCountdownMsg struct {
 
 // TRoundStartMsg is sent when a round starts
 type TRoundStartMsg struct {
-	Type     string `json:"type"` // "t_round_start"
-	Round    int    `json:"round"`
-	Sentence string `json:"sentence"`
-	Tense    string `json:"tense"`    // 시제: "현재형", "과거형", "미래형"
-	TimeLeft int    `json:"timeLeft"` // seconds
+	Type      string `json:"type"`      // "t_round_start"
+	Round     int    `json:"round"`
+	MaxRounds int    `json:"maxRounds"` // 총 라운드 수 (0 = 무제한)
+	Sentence  string `json:"sentence"`
+	Tense     string `json:"tense"`     // 시제: "현재형", "과거형", "미래형"
+	TimeLeft  int    `json:"timeLeft"`  // seconds
 }
 
 // TTimeUpdateMsg is sent to update remaining time
@@ -294,4 +300,10 @@ type TErrorMsg struct {
 // TOpponentNextReadyMsg is sent when opponent is ready for next round
 type TOpponentNextReadyMsg struct {
 	Type string `json:"type"` // "t_opponent_next_ready"
+}
+
+// TGameStoppedMsg is sent when game is stopped in unlimited mode
+type TGameStoppedMsg struct {
+	Type           string `json:"type"`           // "t_game_stopped"
+	StoppedBy      string `json:"stoppedBy"`      // 종료 요청한 플레이어 닉네임
 }

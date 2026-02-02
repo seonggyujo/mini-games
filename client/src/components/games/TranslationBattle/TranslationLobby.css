@@ -331,6 +331,54 @@
   color: var(--text-muted);
 }
 
+/* Rounds Selector */
+.rounds-selector {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.rounds-selector label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.rounds-options {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rounds-btn {
+  flex: 1;
+  padding: 0.75rem 0.5rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.rounds-btn:hover {
+  border-color: var(--primary-color);
+}
+
+.rounds-btn.selected {
+  border-color: var(--primary-color);
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--primary-color);
+}
+
+.unlimited-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
 /* Countdown Screen */
 .countdown-screen {
   background: var(--card-bg);
@@ -533,6 +581,16 @@
 
   .difficulty-options {
     flex-direction: column;
+  }
+
+  .rounds-options {
+    flex-wrap: wrap;
+  }
+
+  .rounds-btn {
+    flex: 0 0 calc(33.33% - 0.35rem);
+    font-size: 0.85rem;
+    padding: 0.6rem 0.25rem;
   }
 
   .waiting-screen,
