@@ -2,10 +2,6 @@
 
 미니 게임을 즐길 수 있는 웹 아케이드
 
-## 데모
-
-https://mini-games.duckdns.org
-
 ## 게임 목록
 
 - 🐍 **Snake** - 클래식 뱀 게임
